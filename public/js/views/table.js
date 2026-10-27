@@ -1,7 +1,7 @@
 import { esc, fmt, signed } from '../lib/esc.js';
 import { t } from '../lib/i18n.js';
 import { qrSvg } from '../lib/qr.js';
-import { lookPicker } from '../ui/accent.js';
+import { lookPanel } from '../ui/accent.js';
 import { cardHtml, ringHtml, initials } from '../ui/cards.js';
 import { GAME_VIEWS } from './games.js';
 
@@ -176,11 +176,10 @@ function fairnessTab(app) {
 function settingsTab(app, gv) {
   const s = app.table.state;
   const personal = `
+    ${lookPanel(app)}
     <div class="row">
-      <button class="btn sm" data-act="toggleSound">${esc(t('sound'))}: ${app.sound ? 'ON' : 'OFF'}</button>
       <button class="btn sm" data-act="setLang" data-v="${app.lang === 'vi' ? 'en' : 'vi'}">${app.lang === 'vi' ? 'English' : 'Tiếng Việt'}</button>
-    </div>
-    ${lookPicker(app)}`;
+    </div>`;
   if (!s.you.isHost) return personal;
   return `${personal}
     <h3>${esc(t('tableSettings'))}</h3>

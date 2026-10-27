@@ -14,8 +14,6 @@
   --ink: #efe7de;
   --muted: #a8998c;
   --line: #3a312b;
-  --felt: #1f4a37;
-  --felt-edge: #3d2a1d;
   --felt-ink: #f4efe6;
   --up: #5cbf78;
   --down: #ef6f5f;
@@ -37,8 +35,6 @@
   --ink: #2a2420;
   --muted: #7a6d62;
   --line: #e0d5c7;
-  --felt: #2f6b4f;
-  --felt-edge: #6b4a32;
   --up: #2f7d46;
   --down: #c0392b;
   --card: #fffdf8;
@@ -176,9 +172,18 @@ code { font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; }
 .play { display: grid; grid-template-rows: minmax(0, 1fr) auto; min-height: 0; }
 .felt-wrap { display: flex; min-height: 0; padding: 30px 38px 34px; }
 .felt {
-  position: relative; flex: 1; border-radius: 50%; background: radial-gradient(ellipse at 50% 40%, color-mix(in srgb, var(--felt) 88%, #fff) 0%, var(--felt) 70%);
-  border: 10px solid var(--felt-edge); box-shadow: inset 0 0 0 2px rgb(255 255 255 / 0.08), var(--shadow); color: var(--felt-ink);
+  position: relative; flex: 1; border-radius: 50%;
+  background: var(--felt-pattern, none), radial-gradient(ellipse at 50% 40%, var(--felt-hi) 0%, var(--felt) 72%);
+  border: 10px solid var(--rail); color: var(--felt-ink);
+  box-shadow: inset 0 0 0 2px var(--rail-trim), inset 0 0 40px rgb(0 0 0 / 0.35), 0 0 0 1px rgb(0 0 0 / 0.5), var(--shadow);
 }
+/* Faint theme name printed on the felt, like a casino table. */
+.felt::before {
+  content: var(--felt-mark, ''); position: absolute; left: 50%; top: 70%; transform: translate(-50%, -50%);
+  font: 800 clamp(10px, 2.2cqw, 22px) / 1 var(--font); letter-spacing: 0.4em; color: var(--felt-ink); opacity: 0.12;
+  white-space: nowrap; pointer-events: none;
+}
+.felt-wrap { background: var(--backdrop, transparent); }
 .center { position: absolute; inset: 26% 18%; display: grid; place-content: center; text-align: center; gap: 4px; pointer-events: none; }
 .center-msg { font-size: 14px; opacity: 0.9; padding: 0 8px; }
 .phase { font-weight: 700; font-size: 15px; letter-spacing: 0.02em; }
@@ -318,7 +323,7 @@ code { font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; }
 .card.sm .ci, .card.xs .ci { position: static; font-size: calc(var(--cw) * 0.42); }
 .card.sm .cs, .card.xs .cs { display: none; }
 .card.back {
-  background: repeating-linear-gradient(45deg, var(--brand) 0 3px, color-mix(in srgb, var(--brand) 70%, #000) 3px 6px);
+  background: var(--cb-pattern, repeating-linear-gradient(45deg, var(--cb-a) 0 3px, var(--cb-b) 3px 6px));
   border: 2px solid #fffaf3;
 }
 .deal { animation: deal 380ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
@@ -409,3 +414,119 @@ code { font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; }
   /* Toasts appear under the header on desktop so they never cover the hand. */
   .toast { bottom: auto; top: calc(64px * var(--k)); zoom: var(--k); }
 }
+
+/* ---------- casino table themes ---------- */
+/* Las Vegas (default): classic green baize, mahogany rail with brass trim, red card backs. */
+:root, [data-table='vegas'] {
+  --felt: #145238; --felt-hi: #237a52; --felt-ink: #f4efe6;
+  --rail: #4a2416; --rail-trim: #c9a227;
+  --cb-a: #b3262e; --cb-b: #7c151b;
+  --backdrop: radial-gradient(ellipse at 50% 0%, rgb(201 162 39 / 0.10), transparent 60%);
+  --felt-mark: 'LAS VEGAS';
+  --felt-pattern: radial-gradient(circle at 50% 50%, transparent 38%, rgb(255 255 255 / 0.035) 38.3%, transparent 38.8%);
+  --theme-swatch: linear-gradient(135deg, #237a52, #145238 60%, #4a2416 60%);
+}
+/* Macau: lacquer-red felt, black rail with gold, gold-on-red card backs, lattice pattern. */
+:root[data-table='macau'], [data-table='macau'] {
+  --felt: #6e1016; --felt-hi: #a31d24; --felt-ink: #ffe9b8;
+  --rail: #160d0b; --rail-trim: #d4af37;
+  --cb-a: #d4af37; --cb-b: #8f1d21;
+  --backdrop: radial-gradient(ellipse at 50% 0%, rgb(212 175 55 / 0.14), transparent 60%);
+  --felt-mark: 'MACAU';
+  --felt-pattern: repeating-linear-gradient(45deg, rgb(255 215 120 / 0.035) 0 1px, transparent 1px 22px),
+    repeating-linear-gradient(-45deg, rgb(255 215 120 / 0.035) 0 1px, transparent 1px 22px);
+  --theme-swatch: linear-gradient(135deg, #a31d24, #6e1016 60%, #d4af37 60%);
+}
+/* Phú Quốc: sea-turquoise felt, driftwood rail with sand trim, wave pattern. */
+:root[data-table='phuquoc'], [data-table='phuquoc'] {
+  --felt: #075a66; --felt-hi: #0f8c96; --felt-ink: #effcfa;
+  --rail: #a07a4c; --rail-trim: #f3e2bf;
+  --cb-a: #13a3a8; --cb-b: #0a5e70;
+  --backdrop: radial-gradient(ellipse at 50% 0%, rgb(56 189 196 / 0.14), transparent 60%);
+  --felt-mark: 'PHÚ QUỐC';
+  --felt-pattern: repeating-radial-gradient(ellipse at 50% 120%, transparent 0 18px, rgb(255 255 255 / 0.04) 18px 19px);
+  --theme-swatch: linear-gradient(135deg, #0f8c96, #075a66 60%, #a07a4c 60%);
+}
+/* Cambodia: royal-purple felt, sandstone rail with bronze, saffron card backs, lotus dots. */
+:root[data-table='cambodia'], [data-table='cambodia'] {
+  --felt: #3a1d57; --felt-hi: #5c3285; --felt-ink: #fff3dc;
+  --rail: #8a6a45; --rail-trim: #d79b2c;
+  --cb-a: #e29a24; --cb-b: #8c4b12;
+  --backdrop: radial-gradient(ellipse at 50% 0%, rgb(215 155 44 / 0.12), transparent 60%);
+  --felt-mark: 'CAMBODIA';
+  --felt-pattern: radial-gradient(circle, rgb(255 220 160 / 0.05) 1.5px, transparent 2px) 0 0 / 26px 26px;
+  --theme-swatch: linear-gradient(135deg, #5c3285, #3a1d57 60%, #d79b2c 60%);
+}
+:root[data-theme='light'] { --backdrop: transparent; }
+
+.tables { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.table-pick {
+  display: grid; gap: 6px; justify-items: center; padding: 8px 4px; border-radius: 12px; border: 2px solid var(--line);
+  background: var(--bg); cursor: pointer; font-size: 12px; font-weight: 600; transition: transform 80ms;
+}
+.table-pick:active { transform: scale(0.95); }
+.table-pick.on { border-color: var(--brand); background: var(--brand-soft); }
+.table-pick .mini-felt {
+  width: 100%; max-width: 72px; aspect-ratio: 1.7; border-radius: 50%; border: 4px solid var(--rail);
+  background: var(--felt-pattern, none), radial-gradient(ellipse at 50% 40%, var(--felt-hi), var(--felt) 72%);
+  box-shadow: inset 0 0 0 1px var(--rail-trim);
+}
+.sound-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.sound-row input[type=range] { flex: 1; min-width: 120px; accent-color: var(--brand); }
+
+/* ---------- home: hero + desktop layout ---------- */
+.look-label { font-size: 13px; color: var(--muted); font-weight: 600; margin-top: 2px; }
+.gm { font-size: 11px; color: var(--muted); text-align: center; line-height: 1.25; }
+.hero { display: none; }
+.home-grid > .panel, .side-col > .panel { margin-bottom: 12px; }
+.create h2 { margin-top: 14px; }
+.home-head .tagline { margin: 2px 0 0; font-size: 14px; }
+.home-head { margin-bottom: 14px; }
+
+@media (min-width: 1024px) {
+  .home { max-width: 1180px; padding: 28px 32px 32px; zoom: var(--k); }
+  .home-head { margin-bottom: 22px; }
+  .brand h1 { font-size: 30px; }
+  .logo { width: 48px; height: 48px; font-size: 28px; border-radius: 14px; }
+  .home-grid {
+    display: grid; gap: 18px; align-items: start;
+    grid-template-columns: minmax(0, 1.55fr) minmax(340px, 1fr);
+    grid-template-areas: 'hero side' 'create side';
+  }
+  .hero { display: block; grid-area: hero; }
+  .create { grid-area: create; margin: 0; }
+  .side-col { grid-area: side; display: grid; gap: 18px; }
+  .side-col > .panel { margin: 0; }
+  .panel { padding: 20px; border-radius: 16px; }
+  .games { gap: 12px; }
+  .game-pick { min-height: 120px; padding: 16px 10px; gap: 6px; }
+  .gi { font-size: 30px; }
+  .gn { font-size: 15px; }
+  .opt-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .group.pts { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .btn.primary.block { min-height: 52px; font-size: 16px; }
+  .hero-felt {
+    position: relative; height: 230px; border-radius: 999px; overflow: hidden;
+    background: var(--felt-pattern, none), radial-gradient(ellipse at 50% 35%, var(--felt-hi), var(--felt) 72%);
+    border: 12px solid var(--rail); color: var(--felt-ink);
+    box-shadow: inset 0 0 0 2px var(--rail-trim), inset 0 0 50px rgb(0 0 0 / 0.4), var(--shadow);
+    display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 28px; padding: 0 60px;
+  }
+  .hero-felt::after {
+    content: var(--felt-mark, ''); position: absolute; right: 64px; bottom: 26px; font-weight: 800; letter-spacing: 0.4em;
+    font-size: 13px; opacity: 0.35;
+  }
+  .hero-cards { display: flex; }
+  .hero-cards .card { --cw: 62px; box-shadow: 0 6px 14px rgb(0 0 0 / 0.35); }
+  .hero-cards .card + .card { margin-left: -26px; }
+  .hero-cards .card:nth-child(1) { transform: rotate(-12deg) translateY(8px); }
+  .hero-cards .card:nth-child(2) { transform: rotate(-6deg) translateY(2px); }
+  .hero-cards .card:nth-child(4) { transform: rotate(6deg) translateY(2px); }
+  .hero-cards .card:nth-child(5) { transform: rotate(12deg) translateY(8px); }
+  .hero-text { display: grid; gap: 4px; }
+  .hero-text b { font-size: 30px; line-height: 1.1; }
+  .hero-text span { font-size: 15px; opacity: 0.85; }
+  .foot { margin-top: 24px; }
+}
+.join .btn { white-space: nowrap; flex: none; }
+@media (max-width: 480px) { .gm { display: none; } }

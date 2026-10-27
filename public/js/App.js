@@ -14,6 +14,7 @@ import { GAME_VIEWS } from './views/games.js';
 import { selectionState } from './views/tienlen.js';
 import { suggestPlay, sortCards } from './domain/tienlen.js';
 import { forgetMotion } from './lib/motion.js';
+import { sfx, cuesFor, setSoundEnabled, setVolume, unlock as unlockAudio } from './ui/sfx.js';
 
 const CODE_RE = /^[A-Z]{3,8}-\d{3}$/;
 export const ACCENTS = ['terracotta', 'amber', 'vermilion', 'coral', 'rose', 'gold'];
@@ -24,8 +25,10 @@ const app = {
   nick: load('sn.nick', ''),
   lang: load('sn.lang', (navigator.language || 'vi').toLowerCase().startsWith('vi') ? 'vi' : 'en'),
   theme: load('sn.theme', 'dark') === 'light' ? 'light' : 'dark',
+  tableTheme: ['vegas', 'macau', 'phuquoc', 'cambodia'].includes(load('sn.table', '')) ? load('sn.table', '') : 'vegas',
   accent: ACCENTS.includes(load('sn.accent', '')) ? load('sn.accent', '') : 'terracotta',
   sound: load('sn.sound', false),
+  volume: load('sn.volume', 0.7),
   recent: load('sn.recent', []),
   home: { game: 'xidach', page: 0, error: '' },
   table: null,
@@ -38,6 +41,8 @@ const app = {
 };
 setLang(app.lang);
 applyTheme();
+setSoundEnabled(app.sound);
+setVolume(app.volume);
 
 // ---------- rendering ----------
 function render() {
@@ -83,8 +88,15 @@ function transition(fn) {
   } else fn();
 }
 
+let lastTickSecond = null;
 function tickCountdowns() {
   const now = Date.now() + app.skew;
+  const h = app.table?.state?.hand;
+  if (h?.actions && h.phase !== 'done' && h.deadline) {
+    const left = Math.ceil((h.deadline - now) / 1000);
+    if (left <= 5 && left > 0 && left !== lastTickSecond) sfx('tick');
+    lastTickSecond = left;
+  }
   root.querySelectorAll('[data-countdown]').forEach((el) => {
     const left = Math.max(0, Math.ceil((Number(el.dataset.countdown) - now) / 1000));
     el.textContent = String(left);
@@ -105,6 +117,7 @@ function toast(text) {
 function applyTheme() {
   const html = document.documentElement;
   html.dataset.theme = app.theme;
+  html.dataset.table = app.tableTheme;
   if (app.accent === 'terracotta') delete html.dataset.accent;
   else html.dataset.accent = app.accent;
   // Browser/OS chrome follows the page background.
@@ -179,35 +192,21 @@ function forgetTable(code) {
 }
 
 // ---------- socket ----------
-let audio;
-function beep(freq = 660, ms = 90) {
-  if (!app.sound) return;
-  try {
-    audio ||= new AudioContext();
-    const o = audio.createOscillator();
-    const g = audio.createGain();
-    o.frequency.value = freq;
-    g.gain.value = 0.06;
-    o.connect(g).connect(audio.destination);
-    o.start();
-    o.stop(audio.currentTime + ms / 1000);
-  } catch {}
-}
-
 function onSocketMessage(m) {
   const tb = app.table;
   if (!tb) return;
   if (m.t === 'state') {
     app.skew = m.now - Date.now();
     const prevHand = tb.state?.handNo;
+    const prevState = tb.state;
     tb.state = m;
+    if (prevState) for (const [name, at] of cuesFor(prevState, m)) sfx(name, at);
     if (m.you.isHost || m.game) rememberTable(tb.code, { game: m.game, host: m.you.isHost || undefined });
     const myTurn = !!m.hand?.actions && m.hand.phase !== 'done';
     if (myTurn && !tb.prevTurn) {
       try {
         if (navigator.userActivation?.hasBeenActive ?? true) navigator.vibrate?.(60);
       } catch {}
-      beep(740);
     }
     if (app.ui.sel?.size) {
       const mine = m.hand?.seats?.[m.you.seat]?.cards || [];
@@ -216,7 +215,6 @@ function onSocketMessage(m) {
     if (prevHand !== m.handNo) {
       app.ui.bet = null;
       app.ui.sel = new Set();
-      beep(520, 60);
     }
     tb.prevTurn = myTurn;
     // First snapshot after joining: take a free seat automatically (spectate when full).
@@ -272,6 +270,14 @@ export const actions = {
     document.documentElement.lang = d.v;
     render();
   },
+  setTable: (d) => {
+    if (!['vegas', 'macau', 'phuquoc', 'cambodia'].includes(d.v)) return;
+    app.tableTheme = d.v;
+    save('sn.table', d.v);
+    applyTheme();
+    sfx('shuffle');
+    render();
+  },
   setAccent: (d) => {
     if (!ACCENTS.includes(d.v)) return;
     app.accent = d.v;
@@ -288,8 +294,15 @@ export const actions = {
   toggleSound: () => {
     app.sound = !app.sound;
     save('sn.sound', app.sound);
-    beep();
+    setSoundEnabled(app.sound);
+    sfx('turn');
     render();
+  },
+  setVolume: (d) => {
+    app.volume = Math.min(1, Math.max(0, Number(d.v)));
+    save('sn.volume', app.volume);
+    setVolume(app.volume);
+    sfx('chip');
   },
   async createTable() {
     if (app.busy) return;
@@ -455,8 +468,10 @@ export const actions = {
 
 // ---------- events ----------
 root.addEventListener('click', (e) => {
+  unlockAudio();
   const el = e.target.closest('[data-act]');
   if (!el || !root.contains(el)) return;
+  if (el.matches('button') && !['toggleSound', 'setVolume'].includes(el.dataset.act)) sfx(el.dataset.act === 'toggleCard' ? 'deal' : 'tap');
   if (el.classList.contains('overlay') && e.target.closest('[data-stop]')) return;
   const fn = actions[el.dataset.act];
   if (!fn) return;
@@ -486,6 +501,7 @@ root.addEventListener('input', (e) => {
   }
 });
 root.addEventListener('change', (e) => {
+  if (e.target.id === 'volume') actions.setVolume({ v: e.target.value });
   if (e.target.matches?.('[data-keep]')) e.target.dataset.dirty = '1';
 });
 addEventListener('keydown', (e) => {

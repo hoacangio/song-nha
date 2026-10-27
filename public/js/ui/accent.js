@@ -20,3 +20,35 @@ export function lookPicker(app) {
       <div class="look-name muted small">${esc(t('accent'))}: ${esc(t(`accent_${app.accent}`))}</div>
     </div>`;
 }
+
+export const TABLE_THEMES = ['vegas', 'macau', 'phuquoc', 'cambodia'];
+
+/** Casino table theme tiles; each tile previews its own felt via a local data-table attribute. */
+export function tablePicker(app) {
+  return `<div class="tables" role="radiogroup" aria-label="${esc(t('tableTheme'))}">
+    ${TABLE_THEMES.map(
+      (id) => `<button class="table-pick ${app.tableTheme === id ? 'on' : ''}" role="radio" aria-checked="${app.tableTheme === id}"
+        data-act="setTable" data-v="${id}" data-table="${id}"><span class="mini-felt" aria-hidden="true"></span>${esc(t(`table_${id}`))}</button>`,
+    ).join('')}
+  </div>`;
+}
+
+/** Sound toggle + volume slider. */
+export function soundRow(app) {
+  return `<div class="sound-row">
+    <button class="btn sm ${app.sound ? 'primary' : ''}" data-act="toggleSound" aria-pressed="${!!app.sound}">${esc(t('sound'))}: ${app.sound ? 'ON' : 'OFF'}</button>
+    <input id="volume" type="range" min="0" max="1" step="0.05" value="${app.volume}" aria-label="${esc(t('volume'))}" ${app.sound ? '' : 'disabled'}>
+  </div>`;
+}
+
+/** Everything about the look and sound, used on the home screen and in table settings. */
+export function lookPanel(app) {
+  return `<div class="look">
+    <div class="look-label">${esc(t('tableTheme'))}</div>
+    ${tablePicker(app)}
+    <div class="look-label">${esc(t('theme'))}</div>
+    ${lookPicker(app)}
+    <div class="look-label">${esc(t('sound'))}</div>
+    ${soundRow(app)}
+  </div>`;
+}
