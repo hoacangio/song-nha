@@ -1,0 +1,23 @@
+{
+  "name": "song-nha",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Sòng Nhà — realtime multiplayer card games with friends (play chips only).",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "dev": "node scripts/local-server.mjs",
+    "dev:cf": "wrangler dev",
+    "check": "node scripts/check-syntax.mjs",
+    "test": "node --test \"tests/unit/*.test.mjs\"",
+    "test:security": "node --test --test-concurrency=1 \"tests/security/*.test.mjs\"",
+    "test:smoke": "node scripts/smoke.mjs",
+    "test:ui": "playwright test",
+    "test:all": "npm run check && npm test && npm run test:smoke && npm run test:security",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.0",
+    "wrangler": "^4.20.0"
+  }
+}
