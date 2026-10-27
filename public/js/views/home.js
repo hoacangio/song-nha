@@ -1,6 +1,7 @@
 import { esc } from '../lib/esc.js';
 import { t } from '../lib/i18n.js';
 import { xidachOptionsForm } from './xidach.js';
+import { lookPicker } from '../ui/accent.js';
 
 const GAMES = [
   { id: 'xidach', icon: '21', ready: true },
@@ -22,7 +23,6 @@ export function homeView(app) {
       <div class="brand"><span class="logo" aria-hidden="true">♠</span><h1>Sòng Nhà</h1></div>
       <div class="head-tools">
         <button class="btn ghost sm" data-act="setLang" data-v="${app.lang === 'vi' ? 'en' : 'vi'}">${app.lang === 'vi' ? 'EN' : 'VI'}</button>
-        <button class="btn ghost sm icon" data-act="toggleTheme" aria-label="${esc(t('theme'))}">◐</button>
       </div>
     </header>
     <p class="tagline">${esc(t('tagline'))}</p>
@@ -88,6 +88,10 @@ export function homeView(app) {
           }`
           : `<p class="muted">${esc(t('noRecent'))}</p>`
       }
+    </section>
+    <section class="panel">
+      <h2>${esc(t('theme'))}</h2>
+      ${lookPicker(app)}
     </section>
     ${app.installPrompt ? `<button class="btn ghost block" data-act="install">${esc(t('install'))}</button>` : ''}
     <footer class="foot">${esc(t('footer'))}</footer>

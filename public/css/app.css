@@ -1,49 +1,13 @@
-/* Sòng Nhà — plain, practical, one warm brand colour. */
+/* Sòng Nhà — plain, practical, one warm brand colour. Dark is the default look. */
 :root {
-  --brand: #b4532a;
-  --brand-ink: #fff;
-  --brand-soft: #f3dccd;
-  --bg: #f6f1ea;
-  --surface: #fffdf9;
-  --surface-2: #efe7dc;
-  --ink: #2a2420;
-  --muted: #7a6d62;
-  --line: #e0d5c7;
-  --felt: #2f6b4f;
-  --felt-edge: #6b4a32;
-  --felt-ink: #f4efe6;
-  --up: #2f7d46;
-  --down: #c0392b;
-  --card: #fffdf8;
-  --card-ink: #221e1b;
-  --card-red: #c3262e;
-  --shadow: 0 1px 2px rgb(0 0 0 / 0.08), 0 4px 14px rgb(0 0 0 / 0.07);
-  --radius: 12px;
-  --font: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  color-scheme: light;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) {
-    --brand: #d26a3c;
-    --brand-soft: #4a2a1c;
-    --bg: #161311;
-    --surface: #211c19;
-    --surface-2: #2b2420;
-    --ink: #efe7de;
-    --muted: #a8998c;
-    --line: #3a312b;
-    --felt: #1f4a37;
-    --felt-edge: #3d2a1d;
-    --up: #5cbf78;
-    --down: #ef6f5f;
-    --card: #f7f2ea;
-    --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 6px 18px rgb(0 0 0 / 0.35);
-    color-scheme: dark;
-  }
-}
-:root[data-theme='dark'] {
-  --brand: #d26a3c;
-  --brand-soft: #4a2a1c;
+  /* accent: terracotta (default). Each accent has a dark-mode and a light-mode tone. */
+  --brand-d: #d9693a;
+  --brand-l: #b4532a;
+  --brand-ink-d: #fff;
+  --brand-ink-l: #fff;
+
+  --brand: var(--brand-d);
+  --brand-ink: var(--brand-ink-d);
   --bg: #161311;
   --surface: #211c19;
   --surface-2: #2b2420;
@@ -52,12 +16,60 @@
   --line: #3a312b;
   --felt: #1f4a37;
   --felt-edge: #3d2a1d;
+  --felt-ink: #f4efe6;
   --up: #5cbf78;
   --down: #ef6f5f;
   --card: #f7f2ea;
+  --card-ink: #221e1b;
+  --card-red: #c3262e;
   --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 6px 18px rgb(0 0 0 / 0.35);
+  --radius: 12px;
+  --font: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --brand-soft: color-mix(in srgb, var(--brand) 24%, var(--bg));
   color-scheme: dark;
 }
+:root[data-theme='light'] {
+  --brand: var(--brand-l);
+  --brand-ink: var(--brand-ink-l);
+  --bg: #f6f1ea;
+  --surface: #fffdf9;
+  --surface-2: #efe7dc;
+  --ink: #2a2420;
+  --muted: #7a6d62;
+  --line: #e0d5c7;
+  --felt: #2f6b4f;
+  --felt-edge: #6b4a32;
+  --up: #2f7d46;
+  --down: #c0392b;
+  --card: #fffdf8;
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.08), 0 4px 14px rgb(0 0 0 / 0.07);
+  --brand-soft: color-mix(in srgb, var(--brand) 18%, var(--bg));
+  color-scheme: light;
+}
+/* Warm accents the player can pick. */
+:root[data-accent='amber']     { --brand-d: #e3a33b; --brand-l: #a86b12; --brand-ink-d: #2a1a00; --brand-ink-l: #fff; }
+:root[data-accent='vermilion'] { --brand-d: #e85a44; --brand-l: #b8362a; }
+:root[data-accent='coral']     { --brand-d: #f2836a; --brand-l: #c4523b; --brand-ink-d: #2a0f08; }
+:root[data-accent='rose']      { --brand-d: #e36a8c; --brand-l: #b23d60; }
+:root[data-accent='gold']      { --brand-d: #d4b04a; --brand-l: #8f6d12; --brand-ink-d: #231a00; --brand-ink-l: #fff; }
+
+.look { display: grid; gap: 10px; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; width: max-content; }
+.seg-b { min-height: 40px; padding: 0 18px; border: 0; background: transparent; font-weight: 600; cursor: pointer; }
+.seg-b.on { background: var(--brand); color: var(--brand-ink); }
+.swatches { display: flex; gap: 10px; flex-wrap: wrap; }
+.swatch {
+  width: 36px; height: 36px; border-radius: 50%; border: 2px solid var(--surface); box-shadow: 0 0 0 1px var(--line);
+  background: var(--sw); cursor: pointer; transition: transform 80ms;
+}
+.swatch:active { transform: scale(0.9); }
+.swatch.on { box-shadow: 0 0 0 2px var(--ink); }
+.swatch[data-v='terracotta'] { --sw: #d9693a; }
+.swatch[data-v='amber'] { --sw: #e3a33b; }
+.swatch[data-v='vermilion'] { --sw: #e85a44; }
+.swatch[data-v='coral'] { --sw: #f2836a; }
+.swatch[data-v='rose'] { --sw: #e36a8c; }
+.swatch[data-v='gold'] { --sw: #d4b04a; }
 
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; }

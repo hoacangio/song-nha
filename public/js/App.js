@@ -13,13 +13,15 @@ import { readXidachOptions, clampBet } from './views/xidach.js';
 import { forgetMotion } from './lib/motion.js';
 
 const CODE_RE = /^[A-Z]{3,8}-\d{3}$/;
+export const ACCENTS = ['terracotta', 'amber', 'vermilion', 'coral', 'rose', 'gold'];
 const root = document.getElementById('app');
 
 const app = {
   route: { name: 'home' },
   nick: load('sn.nick', ''),
   lang: load('sn.lang', (navigator.language || 'vi').toLowerCase().startsWith('vi') ? 'vi' : 'en'),
-  theme: load('sn.theme', 'auto'),
+  theme: load('sn.theme', 'dark') === 'light' ? 'light' : 'dark',
+  accent: ACCENTS.includes(load('sn.accent', '')) ? load('sn.accent', '') : 'terracotta',
   sound: load('sn.sound', false),
   recent: load('sn.recent', []),
   home: { game: 'xidach', page: 0, error: '' },
@@ -98,8 +100,12 @@ function toast(text) {
 }
 
 function applyTheme() {
-  if (app.theme === 'auto') delete document.documentElement.dataset.theme;
-  else document.documentElement.dataset.theme = app.theme;
+  const html = document.documentElement;
+  html.dataset.theme = app.theme;
+  if (app.accent === 'terracotta') delete html.dataset.accent;
+  else html.dataset.accent = app.accent;
+  // Browser/OS chrome follows the page background.
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', app.theme === 'light' ? '#f6f1ea' : '#161311');
 }
 
 // ---------- routing ----------
@@ -258,9 +264,15 @@ export const actions = {
     document.documentElement.lang = d.v;
     render();
   },
+  setAccent: (d) => {
+    if (!ACCENTS.includes(d.v)) return;
+    app.accent = d.v;
+    save('sn.accent', d.v);
+    applyTheme();
+    render();
+  },
   toggleTheme: () => {
-    const dark = app.theme === 'dark' || (app.theme === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
-    app.theme = dark ? 'light' : 'dark';
+    app.theme = app.theme === 'light' ? 'dark' : 'light';
     save('sn.theme', app.theme);
     applyTheme();
     render();
