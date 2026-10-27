@@ -28,8 +28,11 @@ const tap = (page, card) => page.click(`.tl-hand [data-card="${card}"]`, { posit
 const state = (page) => page.evaluate(() => window.App.app.table.state);
 
 test('select cards by tap; Play only enabled for a valid, beating combo; full game finishes', async ({ browser }) => {
+  // A 4-player game is up to ~65 moves and bots think 0.9 s each (≈ 45 s of bot time alone),
+  // so give slow CI runners plenty of room.
+  test.setTimeout(240_000);
   const { ctx, page, errors } = await setup(browser);
-  const deadline = Date.now() + 75_000;
+  const deadline = Date.now() + 200_000;
   let checkedSelection = false;
   while (Date.now() < deadline) {
     const s = await state(page);
@@ -64,6 +67,7 @@ test('select cards by tap; Play only enabled for a valid, beating combo; full ga
     await page.waitForTimeout(150);
   }
   expect(checkedSelection).toBe(true);
+  expect((await state(page)).hand.phase, 'game finished within the deadline').toBe('done');
   await expect(page.locator('.badge.win')).toHaveCount(1, { timeout: 15_000 });
   await expect(page.locator('.delta').first()).toBeVisible();
   const s = await state(page);

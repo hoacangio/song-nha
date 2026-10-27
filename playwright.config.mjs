@@ -9,7 +9,8 @@ export default defineConfig({
   timeout: 90_000,
   fullyParallel: false,
   workers: 1,
-  reporter: [['list']],
+  // On CI the `github` reporter turns each failure into an annotation on the run (readable via the API).
+  reporter: process.env.CI ? [['list'], ['github']] : [['list']],
   use: {
     baseURL: `http://127.0.0.1:${PORT}`,
     locale: 'vi-VN',
