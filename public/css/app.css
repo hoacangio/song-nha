@@ -43,16 +43,33 @@
   color-scheme: light;
 }
 /* Warm accents the player can pick. */
-:root[data-accent='amber']     { --brand-d: #e3a33b; --brand-l: #a86b12; --brand-ink-d: #2a1a00; --brand-ink-l: #fff; }
-:root[data-accent='vermilion'] { --brand-d: #e85a44; --brand-l: #b8362a; }
-:root[data-accent='coral']     { --brand-d: #f2836a; --brand-l: #c4523b; --brand-ink-d: #2a0f08; }
-:root[data-accent='rose']      { --brand-d: #e36a8c; --brand-l: #b23d60; }
-:root[data-accent='gold']      { --brand-d: #d4b04a; --brand-l: #8f6d12; --brand-ink-d: #231a00; --brand-ink-l: #fff; }
 
 .look { display: grid; gap: 10px; }
 .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; width: max-content; }
 .seg-b { min-height: 40px; padding: 0 18px; border: 0; background: transparent; font-weight: 600; cursor: pointer; }
 .seg-b.on { background: var(--brand); color: var(--brand-ink); }
+/* Ngũ hành accents: dark tone, light tone, ink on each. */
+:root[data-accent='kim-gold'] { --brand-d: #d9b45a; --brand-l: #8a6810; --brand-ink-d: #231a00; --brand-ink-l: #fff; }
+:root[data-accent='kim-silver'] { --brand-d: #c3cad4; --brand-l: #56606e; --brand-ink-d: #15191f; --brand-ink-l: #fff; }
+:root[data-accent='moc-jade'] { --brand-d: #3fb58a; --brand-l: #1d7652; --brand-ink-d: #04170f; --brand-ink-l: #fff; }
+:root[data-accent='moc-leaf'] { --brand-d: #86c25a; --brand-l: #4a7a20; --brand-ink-d: #122204; --brand-ink-l: #fff; }
+:root[data-accent='thuy-ocean'] { --brand-d: #4b9be0; --brand-l: #1f5f9e; --brand-ink-d: #06182b; --brand-ink-l: #fff; }
+:root[data-accent='thuy-indigo'] { --brand-d: #7b8cf0; --brand-l: #3a4aa8; --brand-ink-d: #0e1440; --brand-ink-l: #fff; }
+:root[data-accent='hoa-red'] { --brand-d: #e85a44; --brand-l: #b8362a; --brand-ink-d: #fff; --brand-ink-l: #fff; }
+:root[data-accent='hoa-pink'] { --brand-d: #e36a8c; --brand-l: #b23d60; --brand-ink-d: #fff; --brand-ink-l: #fff; }
+:root[data-accent='tho-ochre'] { --brand-d: #e3a33b; --brand-l: #a1650c; --brand-ink-d: #2a1a00; --brand-ink-l: #fff; }
+:root[data-accent='tho-brown'] { --brand-d: #c08a5c; --brand-l: #7a4a26; --brand-ink-d: #1f1206; --brand-ink-l: #fff; }
+.swatch[data-v='kim-gold'] { --sw: #d9b45a; }
+.swatch[data-v='kim-silver'] { --sw: #c3cad4; }
+.swatch[data-v='moc-jade'] { --sw: #3fb58a; }
+.swatch[data-v='moc-leaf'] { --sw: #86c25a; }
+.swatch[data-v='thuy-ocean'] { --sw: #4b9be0; }
+.swatch[data-v='thuy-indigo'] { --sw: #7b8cf0; }
+.swatch[data-v='terracotta'] { --sw: #d9693a; }
+.swatch[data-v='hoa-red'] { --sw: #e85a44; }
+.swatch[data-v='hoa-pink'] { --sw: #e36a8c; }
+.swatch[data-v='tho-ochre'] { --sw: #e3a33b; }
+.swatch[data-v='tho-brown'] { --sw: #c08a5c; }
 .swatches { display: flex; gap: 10px; flex-wrap: wrap; }
 .swatch {
   width: 36px; height: 36px; border-radius: 50%; border: 2px solid var(--surface); box-shadow: 0 0 0 1px var(--line);
@@ -60,12 +77,6 @@
 }
 .swatch:active { transform: scale(0.9); }
 .swatch.on { box-shadow: 0 0 0 2px var(--ink); }
-.swatch[data-v='terracotta'] { --sw: #d9693a; }
-.swatch[data-v='amber'] { --sw: #e3a33b; }
-.swatch[data-v='vermilion'] { --sw: #e85a44; }
-.swatch[data-v='coral'] { --sw: #f2836a; }
-.swatch[data-v='rose'] { --sw: #e36a8c; }
-.swatch[data-v='gold'] { --sw: #d4b04a; }
 
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; }
@@ -530,3 +541,19 @@ code { font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; }
 }
 .join .btn { white-space: nowrap; flex: none; }
 @media (max-width: 480px) { .gm { display: none; } }
+
+/* feng shui picker */
+.elements { display: grid; gap: 6px; }
+.el-row { display: grid; grid-template-columns: 64px 1fr; align-items: center; gap: 8px; }
+.el-name { font-size: 12px; font-weight: 700; color: var(--muted); display: flex; align-items: center; gap: 4px; }
+.el-row.khac .swatch { opacity: 0.35; }
+.el-row .mark { font-size: 11px; font-weight: 800; border-radius: 99px; padding: 0 6px; }
+.el-row.sinh .mark { background: #f1c24c; color: #3a2a00; }
+.el-row.hop .mark { background: var(--surface-2); color: var(--ink); }
+.el-row.khac .mark { background: transparent; color: var(--down); }
+.menh-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 13px; }
+.menh-row input { width: 110px; min-height: 36px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); padding: 0 10px; color: var(--ink); font-size: 16px; }
+.menh-row b { color: var(--ink); }
+.swatch { width: 32px; height: 32px; }
+.el-row .swatches { align-items: center; }
+.el-row .mark { line-height: 20px; white-space: nowrap; align-self: center; }

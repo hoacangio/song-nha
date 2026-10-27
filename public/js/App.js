@@ -14,10 +14,10 @@ import { GAME_VIEWS } from './views/games.js';
 import { selectionState } from './views/tienlen.js';
 import { suggestPlay, sortCards } from './domain/tienlen.js';
 import { forgetMotion } from './lib/motion.js';
+import { ACCENTS, normalizeAccent, isBirthYear, suggestedAccent, menhOf } from './domain/fengshui.js';
 import { sfx, cuesFor, setSoundEnabled, setVolume, unlock as unlockAudio } from './ui/sfx.js';
 
 const CODE_RE = /^[A-Z]{3,8}-\d{3}$/;
-export const ACCENTS = ['terracotta', 'amber', 'vermilion', 'coral', 'rose', 'gold'];
 const root = document.getElementById('app');
 
 const app = {
@@ -26,7 +26,8 @@ const app = {
   lang: load('sn.lang', (navigator.language || 'vi').toLowerCase().startsWith('vi') ? 'vi' : 'en'),
   theme: load('sn.theme', 'dark') === 'light' ? 'light' : 'dark',
   tableTheme: ['vegas', 'macau', 'phuquoc', 'cambodia'].includes(load('sn.table', '')) ? load('sn.table', '') : 'vegas',
-  accent: ACCENTS.includes(load('sn.accent', '')) ? load('sn.accent', '') : 'terracotta',
+  accent: normalizeAccent(load('sn.accent', 'terracotta')),
+  birthYear: isBirthYear(load('sn.birthYear', null)) ? load('sn.birthYear', null) : null,
   sound: load('sn.sound', false),
   volume: load('sn.volume', 0.7),
   recent: load('sn.recent', []),
@@ -276,6 +277,22 @@ export const actions = {
     save('sn.table', d.v);
     applyTheme();
     sfx('shuffle');
+    render();
+  },
+  setBirthYear: () => {
+    const y = Math.round(Number(document.getElementById('birthYear')?.value));
+    if (!isBirthYear(y)) {
+      app.birthYear = null;
+      save('sn.birthYear', null);
+      return render();
+    }
+    app.birthYear = y;
+    save('sn.birthYear', y);
+    document.getElementById('birthYear')?.removeAttribute('data-dirty');
+    // Pick the most favourable colour for that mệnh the first time.
+    const best = suggestedAccent(y);
+    if (best) actions.setAccent({ v: best });
+    toast(`${menhOf(y).canChi} · ${t('fs_menh')} ${t(`el_${menhOf(y).element}`)}`);
     render();
   },
   setAccent: (d) => {

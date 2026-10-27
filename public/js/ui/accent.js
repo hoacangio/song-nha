@@ -1,23 +1,42 @@
 import { esc } from '../lib/esc.js';
 import { t } from '../lib/i18n.js';
+import { ELEMENTS, ACCENT_GROUPS, menhOf, affinity, elementOfAccent } from '../domain/fengshui.js';
 
-const ACCENT_IDS = ['terracotta', 'amber', 'vermilion', 'coral', 'rose', 'gold'];
-
-/** Theme toggle + warm accent swatches (used on the home screen and in table settings). */
+/** Theme toggle + Ngũ hành accent palette with mệnh hints for the player's birth year. */
 export function lookPicker(app) {
+  const menh = menhOf(app.birthYear);
+  const label = (el) => t(`el_${el}`);
+  const mark = { sinh: `★ ${t('fs_sinh')}`, hop: `✓ ${t('fs_hop')}`, khac: t('fs_khac'), neutral: '' };
   return `
     <div class="look">
       <div class="seg" role="radiogroup" aria-label="${esc(t('theme'))}">
         <button role="radio" aria-checked="${app.theme !== 'light'}" class="seg-b ${app.theme !== 'light' ? 'on' : ''}" ${app.theme === 'light' ? 'data-act="toggleTheme"' : ''}>${esc(t('themeDark'))}</button>
         <button role="radio" aria-checked="${app.theme === 'light'}" class="seg-b ${app.theme === 'light' ? 'on' : ''}" ${app.theme !== 'light' ? 'data-act="toggleTheme"' : ''}>${esc(t('themeLight'))}</button>
       </div>
-      <div class="swatches" role="radiogroup" aria-label="${esc(t('accent'))}">
-        ${ACCENT_IDS.map(
-          (id) =>
-            `<button class="swatch ${app.accent === id ? 'on' : ''}" role="radio" aria-checked="${app.accent === id}" data-act="setAccent" data-v="${id}" title="${esc(t(`accent_${id}`))}" aria-label="${esc(t(`accent_${id}`))}"></button>`,
-        ).join('')}
+      <form class="menh-row" data-submit="setBirthYear">
+        <label for="birthYear">${esc(t('fs_year'))}</label>
+        <input id="birthYear" data-keep type="number" inputmode="numeric" min="1900" max="2100" placeholder="1990" value="${app.birthYear ?? ''}">
+        <button class="btn sm" type="submit">${esc(t('fs_check'))}</button>
+        ${menh ? `<span>${esc(menh.canChi)} · ${esc(t('fs_menh'))} <b>${esc(label(menh.element))}</b></span>` : ''}
+      </form>
+      <div class="elements" role="radiogroup" aria-label="${esc(t('accent'))}">
+        ${ELEMENTS.map((el) => {
+          const a = affinity(menh?.element, el);
+          return `<div class="el-row ${a}">
+            <span class="el-name">${esc(label(el))}</span>
+            <div class="swatches">
+              ${ACCENT_GROUPS[el]
+                .map(
+                  (id) =>
+                    `<button class="swatch ${app.accent === id ? 'on' : ''}" role="radio" aria-checked="${app.accent === id}" data-act="setAccent" data-v="${id}" title="${esc(t(`accent_${id}`))}" aria-label="${esc(t(`accent_${id}`))}"></button>`,
+                )
+                .join('')}
+              ${mark[a] ? `<span class="mark">${esc(mark[a])}</span>` : ''}
+            </div>
+          </div>`;
+        }).join('')}
       </div>
-      <div class="look-name muted small">${esc(t('accent'))}: ${esc(t(`accent_${app.accent}`))}</div>
+      <div class="look-name muted small">${esc(t('accent'))}: ${esc(t(`accent_${app.accent}`))} · ${esc(label(elementOfAccent(app.accent)))}${menh ? ` — <span>${esc(t('fs_note'))}</span>` : ''}</div>
     </div>`;
 }
 
