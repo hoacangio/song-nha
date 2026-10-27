@@ -72,6 +72,7 @@ test('full Xì dách hand against bots, then the next hand starts', async ({ bro
 
 for (const vp of PHONES) {
   test(`table fits one screen without scrolling — ${vp.name}`, async ({ browser }) => {
+    test.setTimeout(180_000);
     const { page, ctx, errors } = await newPlayer(browser, vp);
     await createTableWithBots(page, 7); // full 8-seat table
     await page.click('[data-act=start]');
@@ -97,7 +98,14 @@ for (const vp of PHONES) {
         expect(b.right).toBeLessThanOrEqual(m.w + 2);
       }
       if (stage === 'dealing') {
-        await expect(page.locator('[data-act=xetAll]')).toBeVisible({ timeout: 30_000 });
+        // 7 bots each bet and play with a 0.9 s think time, so reaching the dealer can take a while.
+        // A dealer xì dách / xì bàng ends the hand at the deal — then the "done" layout is checked instead.
+        await expect
+          .poll(() => page.evaluate(() => {
+            const h = window.App.app.table.state.hand;
+            return h.phase === 'done' || (h.phase === 'dealer' && !!h.actions);
+          }), { timeout: 90_000 })
+          .toBe(true);
       }
     }
     await page.screenshot({ path: `test-results/fit-${vp.name}.png` });

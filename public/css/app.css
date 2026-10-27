@@ -384,3 +384,28 @@ code { font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; }
 @media (max-height: 700px) {
   .tl-hand { padding-top: 12px; --cw: min(46px, 15cqw); }
 }
+
+/* ---------- large screens: scale the table UI with the viewport ---------- */
+/* --k steps up with both width and height, so a 27" monitor gets bigger cards, seats and controls
+   instead of a stretched felt with laptop-sized content. `zoom` keeps layout and hit-areas in sync. */
+@media (min-width: 1024px) {
+  :root { --k: 1; }
+  .felt-wrap { container-type: size; justify-content: center; align-items: center; }
+  /* Keep the felt a ~2:1 oval centred in the space instead of stretching to any aspect. */
+  .felt { flex: none; width: min(100cqw, 100cqh * 2.1); height: min(100cqh, 100cqw / 1.6); }
+  .seat > *, .center, .tbar > *, .side > *, .dock > * { zoom: var(--k); }
+  .body { grid-template-columns: minmax(0, 1fr) calc(340px * var(--k)); }
+  /* The dock content stays a comfortable width rather than spanning the whole screen. */
+  .dock { justify-items: center; }
+  .dock > * { width: min(100%, 680px); }
+  .dock > .note { width: auto; }
+  .tl-hand { width: min(100%, 760px); }
+}
+@media (min-width: 1440px) and (min-height: 860px) { :root { --k: 1.2; } }
+@media (min-width: 1680px) and (min-height: 940px) { :root { --k: 1.4; } }
+@media (min-width: 2200px) and (min-height: 1180px) { :root { --k: 1.7; } }
+@media (min-width: 2800px) and (min-height: 1500px) { :root { --k: 2.1; } }
+@media (min-width: 1024px) {
+  /* Toasts appear under the header on desktop so they never cover the hand. */
+  .toast { bottom: auto; top: calc(64px * var(--k)); zoom: var(--k); }
+}
