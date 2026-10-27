@@ -9,7 +9,10 @@ import { api } from './services/api.js';
 import { TableSocket } from './services/socket.js';
 import { homeView } from './views/home.js';
 import { tableView, tableUrl } from './views/table.js';
-import { readXidachOptions, clampBet } from './views/xidach.js';
+import { clampBet } from './views/xidach.js';
+import { GAME_VIEWS } from './views/games.js';
+import { selectionState } from './views/tienlen.js';
+import { suggestPlay, sortCards } from './domain/tienlen.js';
 import { forgetMotion } from './lib/motion.js';
 
 const CODE_RE = /^[A-Z]{3,8}-\d{3}$/;
@@ -206,8 +209,13 @@ function onSocketMessage(m) {
       } catch {}
       beep(740);
     }
+    if (app.ui.sel?.size) {
+      const mine = m.hand?.seats?.[m.you.seat]?.cards || [];
+      for (const c of [...app.ui.sel]) if (!mine.includes(c)) app.ui.sel.delete(c);
+    }
     if (prevHand !== m.handNo) {
       app.ui.bet = null;
+      app.ui.sel = new Set();
       beep(520, 60);
     }
     tb.prevTurn = myTurn;
@@ -247,7 +255,7 @@ function readCreateOptions() {
   return {
     startChips: num('o-startChips', 1000),
     turnSeconds: num('o-turnSeconds', 30),
-    game: form ? readXidachOptions(form, 'o-') : {},
+    game: form ? GAME_VIEWS[app.home.game].readOptions(form, 'o-') : {},
   };
 }
 
@@ -351,6 +359,30 @@ export const actions = {
     app.ui.bet = clampBet(cur + Number(d.v) * b.min, b);
     render();
   },
+  // Tiến lên
+  toggleCard: (d) => {
+    const sel = (app.ui.sel ||= new Set());
+    if (sel.has(d.card)) sel.delete(d.card);
+    else sel.add(d.card);
+    render();
+  },
+  playSel: () => {
+    if (!selectionState(app).ok) return;
+    send({ t: 'play', cards: sortCards([...app.ui.sel]) });
+  },
+  pass: () => {
+    app.ui.sel = new Set();
+    send({ t: 'pass' });
+  },
+  hint: () => {
+    const h = app.table?.state?.hand;
+    const mine = h?.seats?.[app.table.state.you.seat]?.cards;
+    if (!mine) return;
+    const cards = suggestPlay(mine, h.trick?.combo ?? null, app.table.state.opts.game, h.mustInclude);
+    app.ui.sel = new Set(cards || []);
+    if (!cards) toast(t('tl_noPlay'));
+    render();
+  },
   bet: () => {
     const b = app.table?.state?.hand?.actions?.bet;
     if (!b) return;
@@ -364,7 +396,8 @@ export const actions = {
     const form = document.getElementById('settingsForm');
     if (!form) return;
     const turnSeconds = Math.round(Number(document.getElementById('s-turnSeconds')?.value)) || undefined;
-    send({ t: 'settings', options: { turnSeconds, game: readXidachOptions(form, 's-') } });
+    const gv = GAME_VIEWS[app.table.state.game];
+    send({ t: 'settings', options: { turnSeconds, game: gv.readOptions(form, 's-') } });
     form.querySelectorAll('[data-dirty]').forEach((el) => delete el.dataset.dirty);
     toast('✓');
   },

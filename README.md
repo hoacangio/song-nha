@@ -6,8 +6,8 @@ no cash-out, no prizes, no ads). Create a private table, share the link or QR co
 | Game | Status | Seats |
 | --- | --- | --- |
 | Xì dách (Vietnamese blackjack) | ✅ playable | 2–8 |
-| Tiến lên miền Nam | ⏳ next | 2–4 |
-| Texas Hold'em (No-Limit) | ⏳ after Tiến lên | 2–9 |
+| Tiến lên miền Nam | ✅ playable | 2–4 |
+| Texas Hold'em (No-Limit) | ⏳ next | 2–9 |
 
 ## Features
 
@@ -47,7 +47,8 @@ Browser (vanilla ES modules, no build)            Cloudflare
   Unit-testable without sockets.
 - **`src/games/<game>/engine.js`** — game engines with a common interface
   (`sanitizeOptions, canStart, startHand, act, timeout, botDue, botAct, view, summary, involved`).
-- **`public/js/domain/`** — pure rules shared by server and client (cards, shuffle/commitment, Xì dách totals).
+- **`public/js/domain/`** — pure rules shared by server and client (cards, shuffle/commitment, Xì dách totals,
+  Tiến lên combos/beating/scoring/move search).
 - **`scripts/local-server.mjs`** — runs the *real* Worker and DO classes on Node 22 with an in-memory DO
   emulation (storage, alarms, hibernation API, auto-responses) and a dependency-free WebSocket server.
 
@@ -74,6 +75,8 @@ WebSocket at `/ws/<CODE>`. Client → server messages are JSON objects with a `t
 | `bet` | `amount` | player | Xì dách, integer within `[minBet, min(maxBet, chips)]` |
 | `hit` / `stay` | | player or dealer | `stay` needs ≥ `playerMin` (đủ tuổi) |
 | `xet` / `xetAll` | `seat` | dealer | only once the dealer has ≥ `dealerMin` |
+| `play` | `cards` | player | Tiến lên: 1–13 distinct card ids from your hand forming a combo that beats the table |
+| `pass` | | player | Tiến lên: not allowed when you lead the round |
 | `addBot` / `removeBot` / `kick` | `seat` | host | |
 | `rebuy` | `amount` | host | adds chips to every seated player (counted as buy-in) |
 | `settings` | `options` | host | between hands only; sanitised |
@@ -102,6 +105,23 @@ HTTP: `POST /api/tables {secret, game, options}` → `{code}` · `GET /api/table
 | Dealer | Rotates each hand (`dealerMode: rotate`) or host deals (`host`) |
 | Bets | Placed before dealing, within min/max bet (default 10–200); no bet before the timer = sit out |
 | Chips | Player losses are capped at their stack; the dealer may go negative (host can top up) |
+
+## Rules — Tiến lên miền Nam (defaults; all are host options)
+
+| Rule | Default |
+| --- | --- |
+| Deck & deal | 52 cards, 13 each (2–4 players; with fewer than 4 the rest stay in the deck) |
+| Order | Ranks 3 < 4 < … < K < A < 2 (heo); suits ♠ < ♣ < ♦ < ♥; a card is compared by rank, then suit |
+| Who leads | First game: holder of 3♠ (with < 4 players: holder of the lowest dealt card) and the first play must include it. Later games: winner of the previous game |
+| Combos | Single (lẻ), pair (đôi), triple (sám), four of a kind (tứ quý), straight (sảnh, ≥ 3 ranks, no 2), consecutive pairs (đôi thông, ≥ 3 pairs, no 2) |
+| Beating | Same combo type and length with a higher top card |
+| Passing | Pass = out until the round resets; when everyone else has passed, the last player starts a new round. The leader cannot pass |
+| Chặt heo | ✅ 3 đôi thông beat a single 2 · ✅ tứ quý beats a single 2 · ✅ tứ quý beats a pair of 2s · ✅ tứ quý beats 3 đôi thông · ✅ 4 đôi thông beat a single 2, a pair of 2s, tứ quý and 3 đôi thông. A bigger chopper of the same shape beats a chopper (chặt chồng) |
+| Chop payment | ✅ `chopPay`: the chopped player pays at once — black 2 = 5, red 2 = 10, tứ quý = 10, 3 đôi thông = 5 points; chặt chồng adds the previous chain |
+| Tới trắng | ✅ sảnh rồng (3 → A) · ✅ tứ quý 2 · ✅ 5 đôi thông · ✅ 6 đôi — the game ends at the deal and every other player pays 26 points |
+| End of game | The first player to empty their hand wins; every other player pays: 1 point per card left (cóng — never played a card — pays 26 instead), plus thối: black 2 = 5, red 2 = 10 each, tứ quý = 10, 3 đôi thông = 5 |
+| Points → chips | points × `unit` (default 10 chips); losses are capped at the player's stack |
+| Timer | Timeout: the leader auto-plays the cheapest lead (incl. the required card); others auto-pass |
 
 ## Development
 

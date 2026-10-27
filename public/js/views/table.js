@@ -3,11 +3,9 @@ import { t } from '../lib/i18n.js';
 import { qrSvg } from '../lib/qr.js';
 import { lookPicker } from '../ui/accent.js';
 import { cardHtml, ringHtml, initials } from '../ui/cards.js';
-import { xidachSeat, xidachCenter, xidachDock, xidachOptionsForm, kindLabel } from './xidach.js';
+import { GAME_VIEWS } from './games.js';
 
-export const GAME_VIEWS = {
-  xidach: { seat: xidachSeat, center: xidachCenter, dock: xidachDock, options: xidachOptionsForm },
-};
+export { GAME_VIEWS };
 
 export function tableUrl(code) {
   return `${location.origin}/t/${encodeURIComponent(code)}`;
@@ -150,9 +148,9 @@ function historyTab(app) {
         (it) => `<li><div class="hist-h">${esc(t('hand'))} #${it.n} · ${esc(new Date(it.at).toLocaleTimeString())}</div>
         ${it.rows
           .map(
-            (r) => `<div class="hist-r"><span>${r.role === 'dealer' ? `<b>${esc(t('dealer'))}</b> ` : ''}${esc(r.nick)}</span>
+            (r) => `<div class="hist-r"><span>${r.role === 'dealer' ? `<b>${esc(t('dealer'))}</b> ` : r.role === 'winner' ? `<b>${esc(t('tl_first'))}</b> ` : ''}${esc(r.nick)}</span>
             <span class="hist-cards">${r.cards.map((c) => cardHtml(c, { size: 'xs' })).join('')}</span>
-            <span class="muted">${esc(kindLabel({ kind: r.kind, total: r.total }))}</span>
+            <span class="muted">${esc((GAME_VIEWS[it.game] || GAME_VIEWS.xidach).kindLabel({ kind: r.kind, total: r.total }))}</span>
             <span class="num ${r.delta > 0 ? 'up' : r.delta < 0 ? 'down' : ''}">${esc(signed(r.delta))}</span></div>`,
           )
           .join('')}</li>`,

@@ -349,3 +349,38 @@ code { font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; }
   .actions .btn { min-height: 44px; }
   .chip-btn { min-height: 36px; }
 }
+
+/* ---------- Tiến lên ---------- */
+.tl-hand {
+  container-type: inline-size; display: flex; justify-content: center; padding-top: 14px; width: 100%;
+  --cw: min(54px, 15cqw);
+}
+.tl-hand .card {
+  --cw: inherit; font: inherit; padding: 0; cursor: pointer; transition: transform 120ms ease, box-shadow 120ms ease;
+  touch-action: manipulation;
+}
+/* Overlap the cards so up to 13 fit the width; never spread wider than 4px gaps. */
+.tl-hand .card + .card { margin-left: min(4px, calc((100cqw - var(--cw) * var(--n)) / (var(--n) - 1))); }
+.tl-hand .card.sel { transform: translateY(-14px); box-shadow: 0 0 0 2px var(--brand), 0 6px 12px rgb(0 0 0 / 0.35); }
+.tl-hand .card.must:not(.sel) { box-shadow: 0 0 0 2px #f1c24c; }
+.tl-hand .card:active { transform: translateY(-6px) scale(0.97); }
+.tl-hand .card.sel:active { transform: translateY(-14px) scale(0.97); }
+.game-tienlen .dock .actions .btn:first-child:not(.grow) { padding: 0 12px; }
+
+.trick { display: flex; justify-content: center; gap: 0; margin-bottom: 4px; }
+.trick .card + .card { margin-left: -14px; }
+.land { animation: land 360ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+@keyframes land { from { opacity: 0; transform: translateY(26px) scale(0.85); } }
+.chop-word { color: #ffd9a8; }
+.count-back { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; color: var(--felt-ink); background: rgb(0 0 0 / 0.35); padding: 1px 6px 1px 3px; border-radius: 6px; }
+.badge.pass { background: var(--surface-2); color: var(--muted); }
+.badge.win { background: #f1c24c; color: #3a2a00; }
+.badge.chop { background: var(--brand); color: var(--brand-ink); }
+.group { border: 1px solid var(--line); border-radius: 10px; padding: 6px 10px; margin: 0; grid-column: 1 / -1; display: grid; gap: 0; }
+.group legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
+.group.pts { grid-template-columns: 1fr 1fr; gap: 8px; }
+.group.pts .check { grid-column: 1 / -1; }
+.group .check { min-height: 36px; font-size: 13px; }
+@media (max-height: 700px) {
+  .tl-hand { padding-top: 12px; --cw: min(46px, 15cqw); }
+}

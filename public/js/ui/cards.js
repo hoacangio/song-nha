@@ -7,11 +7,12 @@ const backKeys = new Set();
 
 /**
  * @param {string|null} card card id, or null for a face-down card
- * @param {{key?:string, size?:'sm'|'md'|'lg', deal?:number, extra?:string}} o
+ * @param {{key?:string, size?:'sm'|'md'|'lg', deal?:number, extra?:string, tap?:string}} o
+ *   tap   – action name: the card becomes a button with data-act=tap data-card=<id>
  *   key   – stable identity used for one-shot deal/flip animations
  *   deal  – stagger (ms) for the deal animation
  */
-export function cardHtml(card, { key = '', size = 'md', deal = 0, extra = '' } = {}) {
+export function cardHtml(card, { key = '', size = 'md', deal = 0, extra = '', tap = '' } = {}) {
   let anim = { cls: '', style: '' };
   if (key) {
     // A card first rendered face-down and later face-up flips once; otherwise it is dealt once.
@@ -24,10 +25,12 @@ export function cardHtml(card, { key = '', size = 'md', deal = 0, extra = '' } =
   }
   const r = rankLabel(card);
   const s = suitGlyph(card);
+  const tag = tap ? 'button' : 'div';
+  const act = tap ? ` type="button" data-act="${esc(tap)}" aria-pressed="${extra.includes('sel')}"` : '';
   return (
-    `<div class="card ${size} ${isRed(card) ? 'red' : ''} ${anim.cls} ${extra}" style="${anim.style}" ` +
-    `data-card="${esc(card)}" aria-label="${esc(r + s)}">` +
-    `<span class="ci">${esc(r)}<i>${s}</i></span><span class="cs">${s}</span></div>`
+    `<${tag} class="card ${size} ${isRed(card) ? 'red' : ''} ${anim.cls} ${extra}" style="${anim.style}" ` +
+    `data-card="${esc(card)}" aria-label="${esc(r + s)}"${act}>` +
+    `<span class="ci">${esc(r)}<i>${s}</i></span><span class="cs">${s}</span></${tag}>`
   );
 }
 

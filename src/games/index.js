@@ -1,6 +1,7 @@
 import * as xidach from './xidach/engine.js';
+import * as tienlen from './tienlen/engine.js';
 
-/** Registered game engines. Tiến lên and Hold'em plug in here with the same interface. */
-export const GAMES = Object.freeze({ xidach });
+/** Registered game engines (common interface: see README → Architecture). */
+export const GAMES = Object.freeze({ xidach, tienlen });
 
 export const isGame = (id) => typeof id === 'string' && Object.prototype.hasOwnProperty.call(GAMES, id);

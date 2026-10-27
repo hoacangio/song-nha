@@ -1,11 +1,11 @@
 import { esc } from '../lib/esc.js';
 import { t } from '../lib/i18n.js';
-import { xidachOptionsForm } from './xidach.js';
+import { GAME_VIEWS } from './games.js';
 import { lookPicker } from '../ui/accent.js';
 
 const GAMES = [
   { id: 'xidach', icon: '21', ready: true },
-  { id: 'tienlen', icon: '2♠', ready: false },
+  { id: 'tienlen', icon: '2♠', ready: true },
   { id: 'holdem', icon: 'A♥', ready: false },
 ];
 
@@ -50,7 +50,7 @@ export function homeView(app) {
         <form id="createForm" class="opt-grid">
           <label class="field"><span>${esc(t('startChips'))}</span><input id="o-startChips" data-keep name="startChips" type="number" inputmode="numeric" min="100" max="1000000" step="100" value="1000"></label>
           <label class="field"><span>${esc(t('turnSeconds'))}</span><input id="o-turnSeconds" data-keep name="turnSeconds" type="number" inputmode="numeric" min="10" max="120" value="30"></label>
-          ${xidachOptionsForm(null, 'o-')}
+          ${GAME_VIEWS[h.game].options(null, 'o-')}
         </form>
       </details>
       <button class="btn primary block" data-act="createTable" ${app.busy ? 'disabled' : ''}>${esc(t('create'))}</button>
