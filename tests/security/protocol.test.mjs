@@ -17,12 +17,8 @@ async function table3() {
   return { code: body.code, host, a, b, all: [host, a, b] };
 }
 
-const errOf = async (c, msg) => {
-  const n = c.messages.length;
-  c.send(msg);
-  const m = await c.wait((x) => (x.t === 'err' || x.t === 'state') && c.messages.indexOf(x) >= n);
-  return m.t === 'err' ? m.code : 'ok';
-};
+const errOf = async (c, msg) => (await c.exchange(msg)).err ?? 'ok';
+const syncAll = (cs) => Promise.all(cs.map((c) => c.sync()));
 
 test('private cards never reach other sockets before they are shown', async () => {
   const { host, a, b, all } = await table3();
@@ -30,9 +26,10 @@ test('private cards never reach other sockets before they are shown', async () =
   await host.act({ t: 'start' });
   await a.act({ t: 'bet', amount: 10 });
   await b.act({ t: 'bet', amount: 10 });
-  await sleep(50);
+  await syncAll(all);
   // Play the hand out while recording every frame.
   for (let i = 0; i < 40; i++) {
+    await syncAll(all);
     const h = host.state.hand;
     if (h.phase === 'done') break;
     const turnClient = all.find((c) => c.seat === h.turn);
@@ -47,7 +44,12 @@ test('private cards never reach other sockets before they are shown', async () =
       if (m.t !== 'state' || !m.hand) continue;
       m.hand.seats.forEach((hs, i) => {
         if (!hs || i === m.you.seat) return;
-        if (hs.cards) assert.ok(hs.settled || m.hand.phase === 'done' || hs.result, `seat ${i} leaked to ${viewer.nick}`);
+        if (!hs.cards) return;
+        const done = m.hand.phase === 'done';
+        // A player's hand becomes public only once it is settled (xét / instant hand);
+        // the dealer's hand only once the dealer has checked someone.
+        const dealerShown = i === m.hand.dealer && m.hand.seats.some((x) => x && x.settled);
+        assert.ok(done || hs.settled || dealerShown, `seat ${i} leaked to ${viewer.nick} in phase ${m.hand.phase}`);
       });
     }
   }
@@ -67,7 +69,7 @@ test('spectators see no private cards at all', async () => {
   await host.act({ t: 'start' });
   await a.act({ t: 'bet', amount: 10 });
   await b.act({ t: 'bet', amount: 10 });
-  await sleep(50);
+  await syncAll(all);
   const h = spec.state.hand;
   if (h.phase !== 'done') {
     h.seats.forEach((hs, i) => hs && !hs.settled && assert.equal(hs.cards, null, `seat ${i}`));
@@ -84,7 +86,7 @@ test('out-of-turn actions are rejected', async () => {
   assert.equal(await errOf(a, { t: 'hit' }), 'wrong_phase');
   await a.act({ t: 'bet', amount: 10 });
   await b.act({ t: 'bet', amount: 10 });
-  await sleep(30);
+  await syncAll(all);
   const h = host.state.hand;
   if (h.phase === 'play') {
     const notTurn = [a, b].find((c) => c.seat !== h.turn);
@@ -141,9 +143,12 @@ test('rate limit kicks in for floods', async () => {
 test('wrong Origin is refused for WebSocket and API', async () => {
   const { body } = await createTable(server);
   const bad = new Client(server, body.code, { origin: 'https://evil.example' });
-  const ev = await bad.closed;
-  assert.notEqual(ev.code, 1000);
+  // A refused handshake: Node's WebSocket emits 'error' (and never 'open').
+  const outcome = await bad.opened.then(() => 'open', () => 'refused');
+  assert.equal(outcome, 'refused');
   assert.equal(bad.messages.length, 0);
+  const noOrigin = new Client(server, body.code, { origin: '' });
+  assert.equal(await noOrigin.opened.then(() => 'open', () => 'refused'), 'refused', 'missing Origin refused');
   const r = await createTable(server, { origin: 'https://evil.example' });
   assert.equal(r.status, 403);
 });
@@ -193,7 +198,7 @@ test('deck cards never sent while the hand runs', async () => {
   await host.act({ t: 'start' });
   await a.act({ t: 'bet', amount: 10 });
   await b.act({ t: 'bet', amount: 10 });
-  await sleep(30);
+  await syncAll(all);
   const st = a.state;
   if (st.hand.phase !== 'done') {
     const visible = new Set(st.hand.seats.flatMap((s) => (s && s.cards) || []));
@@ -201,5 +206,16 @@ test('deck cards never sent while the hand runs', async () => {
     const mentioned = DECK.filter((c) => frame.includes(`"${c}"`));
     for (const c of mentioned) assert.ok(visible.has(c), `card ${c} leaked`);
   }
+  all.forEach((c) => c.close());
+});
+
+test('heartbeat is answered by the runtime auto-response, not the table', async () => {
+  const { host, all } = await table3();
+  const before = host.messages.length;
+  for (let i = 0; i < 40; i++) host.send('hb'); // far above the rate limit if it reached the table
+  await sleep(150);
+  assert.equal(host.heartbeats, 40);
+  assert.equal(host.messages.length, before, 'no table messages (no rate_limited errors)');
+  assert.equal(await errOf(host, { t: 'start' }), 'ok');
   all.forEach((c) => c.close());
 });

@@ -202,7 +202,7 @@ function onSocketMessage(m) {
     const myTurn = !!m.hand?.actions && m.hand.phase !== 'done';
     if (myTurn && !tb.prevTurn) {
       try {
-        navigator.vibrate?.(60);
+        if (navigator.userActivation?.hasBeenActive ?? true) navigator.vibrate?.(60);
       } catch {}
       beep(740);
     }

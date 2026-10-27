@@ -94,7 +94,7 @@ function sideHtml(app, gv) {
   return `
     <nav class="tabs" role="tablist">${TABS.map(
       (k) => `<button role="tab" class="tab ${k === tab ? 'on' : ''}" aria-selected="${k === tab}" data-act="tab" data-v="${k}">${esc(t(k))}</button>`,
-    ).join('')}</nav>
+    ).join('')}<button class="tab close-x" data-act="drawer" aria-label="${esc(t('close'))}">✕</button></nav>
     <div class="tab-body">${
       tab === 'players'
         ? playersTab(app)

@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # Switch to `npm ci` (and `cache: npm`) once package-lock.json is committed.
+      - run: npm install --no-audit --no-fund
+      - name: Syntax check
+        run: npm run check
+      - name: Unit tests
+        run: npm test
+      - name: Offline smoke test
+        run: npm run test:smoke
+      - name: Protocol security tests
+        run: npm run test:security
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: UI tests (Playwright)
+        run: npm run test:ui
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ui-results
+          path: test-results/
+          retention-days: 7
+
+  deploy:
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-audit --no-fund
+      - uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: "4"

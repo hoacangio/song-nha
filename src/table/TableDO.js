@@ -19,6 +19,8 @@ import { isGame } from '../games/index.js';
 import { json } from '../lib/http.js';
 
 const RATE = { capacity: 20, rate: 8 };
+export const HEARTBEAT = 'hb';
+export const HEARTBEAT_REPLY = 'hb!';
 const MAX_STRIKES = 40;
 
 export class TableDO {
@@ -28,6 +30,10 @@ export class TableDO {
     this.t = undefined;
     this.queue = Promise.resolve();
     this.buckets = new Map();
+    // Client heartbeats are answered by the runtime without waking (or billing) the object.
+    if (typeof WebSocketRequestResponsePair === 'function' && ctx.setWebSocketAutoResponse) {
+      ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair(HEARTBEAT, HEARTBEAT_REPLY));
+    }
   }
 
   /** Serializes all work on this table (crypto awaits would otherwise let events interleave). */

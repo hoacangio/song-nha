@@ -23,9 +23,10 @@ export class TableSocket {
       ws.send(JSON.stringify({ t: 'hello', secret: this.secret, nick: this.nick }));
       this.onStatus?.('open');
       clearInterval(this.beat);
-      this.beat = setInterval(() => this.send({ t: 'ping' }), 25_000);
+      this.beat = setInterval(() => ws.readyState === 1 && ws.send('hb'), 25_000); // runtime auto-response
     };
     ws.onmessage = (e) => {
+      if (e.data === 'hb!') return;
       let m;
       try {
         m = JSON.parse(e.data);

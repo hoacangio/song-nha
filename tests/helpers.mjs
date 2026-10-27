@@ -20,15 +20,18 @@ export class Client {
     this.messages = [];
     this.raw = [];
     this.waiters = [];
+    this.heartbeats = 0;
     const url = `${server.url.replace('http', 'ws')}/ws/${code}`;
-    this.ws = new WebSocket(url, { headers: { origin: origin ?? server.url } });
+    this.ws = new WebSocket(url, { headers: origin === '' ? {} : { origin: origin ?? server.url } });
     this.closed = new Promise((r) => this.ws.addEventListener('close', (e) => r(e)));
     this.opened = new Promise((resolve, reject) => {
       this.ws.addEventListener('open', resolve);
       this.ws.addEventListener('error', reject);
     });
+    this.opened.catch(() => {});
     this.ws.addEventListener('message', (e) => {
       this.raw.push(e.data);
+      if (e.data === 'hb!') return void this.heartbeats++;
       const m = JSON.parse(e.data);
       this.messages.push(m);
       if (m.t === 'state') this.state = m;
@@ -56,11 +59,46 @@ export class Client {
       });
     });
   }
-  /** Sends and waits for the next state (or an error). */
-  async act(obj) {
+  /**
+   * Sends a message, then a ping. The table processes messages in order, so every reply to
+   * `obj` arrives before the pong. Returns { err, state } for that window.
+   */
+  async exchange(obj) {
+    await this.throttle(2);
     const n = this.messages.length;
     this.send(obj);
-    return this.wait((m) => (m.t === 'state' || m.t === 'err') && this.messages.indexOf(m) >= n);
+    this.send({ t: 'ping' });
+    await this.wait((m) => m.t === 'pong' && this.messages.indexOf(m) >= n);
+    const window = this.messages.slice(n);
+    const err = window.find((m) => m.t === 'err');
+    return { err: err ? err.code : null, state: this.state };
+  }
+  /** Mirrors the server's token bucket (slightly stricter) so tests never trip the rate limit by accident. */
+  async throttle(cost) {
+    const cap = 16;
+    const rate = 7;
+    this.bucket ||= { tokens: cap, at: Date.now() };
+    for (;;) {
+      const now = Date.now();
+      this.bucket.tokens = Math.min(cap, this.bucket.tokens + ((now - this.bucket.at) / 1000) * rate);
+      this.bucket.at = now;
+      if (this.bucket.tokens >= cost) {
+        this.bucket.tokens -= cost;
+        return;
+      }
+      await sleep(Math.ceil(((cost - this.bucket.tokens) / rate) * 1000));
+    }
+  }
+  /** Sends and returns the resulting state (throws on an error reply). */
+  async act(obj) {
+    const r = await this.exchange(obj);
+    if (r.err) throw new Error(`${this.nick}: ${JSON.stringify(obj)} → ${r.err}`);
+    return r.state;
+  }
+  /** Waits until all earlier broadcasts to this socket have arrived. */
+  async sync() {
+    await this.exchange({ t: 'ping' });
+    return this.state;
   }
   async join({ sit = true } = {}) {
     await this.opened;
@@ -69,6 +107,7 @@ export class Client {
     this.pid = w.pid;
     await this.wait((m) => m.t === 'state');
     if (sit) await this.act({ t: 'sit' });
+    else await this.sync();
     return this;
   }
   get seat() {

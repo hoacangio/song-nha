@@ -60,7 +60,8 @@ export function xidachSeat(app, i, isMe) {
     }
     parts.push(`<div class="mini-hand">${cards.join('')}</div>`);
   }
-  if (hs && hs.bet != null) {
+  const canXet = h && h.phase === 'dealer' && h.actions?.xet && h.actions.targets?.includes(i);
+  if (hs && hs.bet != null && !canXet) {
     const a = oneShot(`hbet-${s.handNo}-${i}`, 'chip-in', 420);
     parts.push(`<span class="bet-chip ${a.cls}" style="${a.style}">${fmt(hs.bet)}</span>`);
   }
@@ -73,7 +74,7 @@ export function xidachSeat(app, i, isMe) {
   } else if (hs?.done && !isMe && h.phase === 'play') {
     parts.push(`<span class="kind muted">✓</span>`);
   }
-  if (h && h.phase === 'dealer' && h.actions?.targets?.includes(i) && h.actions.xet) {
+  if (canXet) {
     parts.push(`<button class="btn xs primary xet-btn" data-act="xet" data-seat="${i}">${esc(t('xet'))}</button>`);
   }
   return parts.join('');

@@ -47,6 +47,12 @@ class EmuSocket {
     return structuredClone(this.attachment);
   }
 }
+globalThis.WebSocketRequestResponsePair = class {
+  constructor(request, response) {
+    this.request = request;
+    this.response = response;
+  }
+};
 globalThis.WebSocketPair = class {
   constructor() {
     const client = new EmuSocket();
@@ -115,6 +121,9 @@ class EmuState {
   }
   acceptWebSocket(ws) {
     this.sockets.add(ws);
+  }
+  setWebSocketAutoResponse(pair) {
+    this.autoResponse = pair;
   }
   getWebSockets() {
     return [...this.sockets].filter((s) => s.readyState === 1);
@@ -228,7 +237,7 @@ function encodeFrame(opcode, payload) {
   return Buffer.concat([head, payload]);
 }
 
-function attachSocket(sock, serverEnd, instance) {
+function attachSocket(sock, serverEnd, instance, state) {
   let buf = Buffer.alloc(0);
   let fragments = null;
   let fragOpcode = 0;
@@ -306,6 +315,11 @@ function attachSocket(sock, serverEnd, instance) {
       const whole = Buffer.concat(fragments);
       fragments = null;
       const data = fragOpcode === 1 ? whole.toString('utf8') : whole.buffer.slice(whole.byteOffset, whole.byteOffset + whole.length);
+      const auto = state.autoResponse;
+      if (auto && data === auto.request) {
+        sock.write(encodeFrame(1, Buffer.from(auto.response)));
+        continue;
+      }
       if (serverEnd.readyState === 1) Promise.resolve(instance.webSocketMessage?.(serverEnd, data)).catch((e) => console.error(e));
     }
   });
@@ -348,7 +362,10 @@ export async function startServer({ port = 8787, host = '127.0.0.1', quiet = fal
     }
   });
 
+  const upgraded = new Set();
   server.on('upgrade', async (req, sock) => {
+    upgraded.add(sock);
+    sock.on('close', () => upgraded.delete(sock));
     try {
       const base = `http://${req.headers.host || `${host}:${port}`}`;
       const response = await worker.fetch(await toRequest(req, base), env, {});
@@ -366,7 +383,7 @@ export async function startServer({ port = 8787, host = '127.0.0.1', quiet = fal
       const serverEnd = client.peer;
       const code = decodeURIComponent(new URL(req.url, base).pathname.slice(4)).toUpperCase();
       const entry = env.TABLE.get(env.TABLE.idFromName(`table:${code}`))._entry;
-      attachSocket(sock, serverEnd, entry.instance);
+      attachSocket(sock, serverEnd, entry.instance, entry.state);
     } catch (e) {
       console.error(e);
       sock.destroy();
@@ -392,6 +409,7 @@ export async function startServer({ port = 8787, host = '127.0.0.1', quiet = fal
       new Promise((r) => {
         for (const s of allStorages()) clearTimeout(s.timer);
         server.closeAllConnections?.();
+        for (const s of upgraded) s.destroy();
         server.close(() => r());
       }),
   };
