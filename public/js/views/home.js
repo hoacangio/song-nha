@@ -68,8 +68,10 @@ export function homeView(app) {
       <form class="join" data-submit="joinCode">
         <input id="joinCode" data-keep class="code-input" maxlength="12" autocapitalize="characters" autocomplete="off"
                spellcheck="false" placeholder="${esc(t('codePh'))}" aria-label="${esc(t('codePh'))}">
-        <button class="btn icon random-btn" type="button" data-act="joinRandom" title="${esc(t('randomJoin'))}" aria-label="${esc(t('randomJoin'))}" ${app.busy ? 'disabled' : ''}>🎲</button>
-        <button class="btn" type="submit">${esc(t('join'))}</button>
+        <div class="join-btns">
+          <button class="btn random-btn" type="button" data-act="joinRandom" title="${esc(t('randomJoin'))}" aria-label="${esc(t('randomJoin'))}" ${app.busy ? 'disabled' : ''}><span aria-hidden="true">🎲</span> ${esc(t('randomShort'))}</button>
+          <button class="btn join-go" type="submit">${esc(t('join'))}</button>
+        </div>
       </form>
       ${h.error ? `<p class="error" role="alert">${esc(h.error)}</p>` : ''}
     </section>
