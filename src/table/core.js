@@ -248,6 +248,13 @@ export async function handle(t, actor, msg, now) {
   return {};
 }
 
+/**
+ * Is a person at the table right now (seated, not a bot, not disconnected)? Without one, no new hand is
+ * dealt automatically: bots never play on their own, which would burn storage writes all day.
+ * The pending next hand starts as soon as someone comes back (onJoin persists → the alarm fires).
+ */
+export const humanPresent = (t) => t.seats.some((s) => s && !s.bot && !s.away);
+
 /** Runs due timers: turn timeouts, bot moves, seat holds, auto next hand. Returns true if state changed. */
 export async function tick(t, now) {
   const eng = engineOf(t);
@@ -272,7 +279,7 @@ export async function tick(t, now) {
         changed = true;
         continue;
       }
-    } else if (h && h.phase === 'done' && h.nextAt && now >= h.nextAt) {
+    } else if (h && h.phase === 'done' && h.nextAt && now >= h.nextAt && humanPresent(t)) {
       h.nextAt = null;
       changed = true;
       if (eng.canStart(t)) {
@@ -298,7 +305,7 @@ export function nextWake(t) {
   if (h && h.phase !== 'done') {
     if (h.deadline) times.push(h.deadline);
     if (engineOf(t).botDue(t, h) >= 0) times.push(h.botAt ?? Date.now() + BOT_DELAY_MS);
-  } else if (h && h.nextAt) times.push(h.nextAt);
+  } else if (h && h.nextAt && humanPresent(t)) times.push(h.nextAt);
   for (const s of t.seats) if (s && s.away) times.push(s.away + SEAT_HOLD_MS);
   return Math.min(...times);
 }

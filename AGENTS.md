@@ -92,7 +92,9 @@ See the table in README → *Security model*. Key invariants with tests:
    secret.
 3. Storage stays bounded: creation quota (tests/security/storage), 6 h expiry for never-played tables,
    capped ledger/history, no storage write when nothing changed. Anything new that is stored per table
-   or per client needs a cap and an expiry.
+   or per client needs a cap and an expiry. Rows written are the free-tier bottleneck (100k/day): nothing may
+   loop on alarms without a person present (`humanPresent`, tests/unit/bots-idle). CI runs a production smoke
+   test after deploy with `wrangler tail`, so Worker exceptions show up as annotations (scripts/tail-report.mjs).
 4. Unknown types/fields, prototype keys, non-integer/negative/overflow amounts, oversized frames and
    wrong origins are rejected.
 

@@ -50,7 +50,12 @@ export class TableDO {
 
   async persist() {
     await this.ctx.storage.put('table', this.t);
-    await this.ctx.storage.setAlarm(nextWake(this.t));
+    // Every storage write counts against the daily quota: only move the alarm when its time changed.
+    const wake = nextWake(this.t);
+    if (wake !== this.alarmAt) {
+      await this.ctx.storage.setAlarm(wake);
+      this.alarmAt = wake;
+    }
   }
 
   sockets() {
@@ -227,6 +232,7 @@ export class TableDO {
   }
 
   async onAlarm() {
+    this.alarmAt = null; // the alarm that just fired is no longer set
     const t = await this.load();
     if (!t) return;
     const now = Date.now();
@@ -263,6 +269,7 @@ export class TableDO {
       } catch {}
     }
     this.t = null;
+    this.alarmAt = null;
     await this.ctx.storage.deleteAlarm();
     await this.ctx.storage.deleteAll();
   }

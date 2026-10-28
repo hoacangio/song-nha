@@ -79,7 +79,14 @@ export default {
 
     if (path === '/api/tables' && request.method === 'POST') {
       if (!originAllowed(request, env)) return json({ error: 'bad_origin' }, 403);
-      return createTable(request, env);
+      try {
+        return await createTable(request, env);
+      } catch (e) {
+        // e.g. "Exceeded allowed rows written in Durable Objects free tier" — say so instead of a 500 page.
+        console.error('create failed', e);
+        const quota = /exceeded|limit/i.test(String(e?.message));
+        return json({ error: quota ? 'server_quota' : 'create_failed' }, 503);
+      }
     }
 
     const m = path.match(/^\/api\/tables\/([^/]+)$/);

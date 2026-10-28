@@ -245,6 +245,9 @@ A typical 4-player Xì dách hand ≈ 12 incoming messages + ~6 alarms ≈ **7 D
 state change writes the table and its alarm, ≈ **35 rows written**. Rows written is the binding limit:
 ≈ **2,500 hands/day** (roughly 40 table-hours of continuous play), which is plenty for friends and family.
 Idle tables hibernate and cost nothing until the expiry alarm deletes them (6 h if never played, else 7 days).
+Bots never play on their own: once no person is seated and connected, the running hand finishes and no new hand
+is dealt until someone returns (an abandoned bot table used to write ~5,000 rows/hour and exhausted the free
+quota; tests/unit/bots-idle). The alarm is only rewritten when its time changes.
 Worst case for junk: the global quota (1,500/h) × 6 h ≈ 9,000 empty tables of ~1 KB each, all self-deleting.
 
 ---

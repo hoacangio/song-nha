@@ -497,7 +497,9 @@ export const actions = {
           ? t('tooMany')
           : r.data?.error === 'create_rate'
             ? t('createRate', Math.max(1, Math.ceil((r.data.retryAfter || 60) / 60)))
-            : t('createFailed');
+            : r.data?.error === 'server_quota'
+              ? t('serverQuota')
+              : `${t('createFailed')} (${r.data?.error || `HTTP ${r.status ?? '?'}`})`;
       return render();
     }
     rememberTable(r.data.code, { game: app.home.game, host: true });
