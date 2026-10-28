@@ -727,3 +727,53 @@ code { font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; }
 .cert-ask { align-content: start; }
 .random-btn { flex: none; font-size: 20px; }
 .pub-chip { font-size: 16px; line-height: 1; }
+/* learn menu: course list (home side column, mobile 🎓 tab, table sidebar tab) */
+.learn-menu h2 { margin: 0 0 4px; }
+.learn-menu > p { margin: 0 0 10px; }
+.courses { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.course-row {
+  display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; align-items: center; gap: 10px;
+  padding: 8px 10px; border-radius: 12px; background: var(--surface-2, rgb(255 255 255 / 0.04)); border: 1px solid var(--line);
+}
+.course-row.done { border-color: color-mix(in srgb, var(--accent) 55%, var(--line)); }
+.course-ico { font-size: 24px; text-align: center; }
+.course-info { display: grid; gap: 2px; min-width: 0; }
+.course-info b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.course-info .small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.course-bar { display: block; height: 4px; border-radius: 99px; background: var(--line); overflow: hidden; margin-top: 2px; }
+.course-bar i { display: block; height: 100%; background: var(--accent); border-radius: inherit; }
+.course-row .btn { white-space: nowrap; }
+
+/* mobile home: one section at a time, switched from the bottom bar */
+.bottom-bar { display: none; }
+@media (max-width: 1023px) {
+  .home { padding-bottom: calc(76px + env(safe-area-inset-bottom)); }
+  .home-grid.mtab-play [data-mtab]:not([data-mtab='play']),
+  .home-grid.mtab-recent [data-mtab]:not([data-mtab='recent']),
+  .home-grid.mtab-learn [data-mtab]:not([data-mtab='learn']) { display: none; }
+  .bottom-bar {
+    display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); position: fixed; z-index: 30; left: 0; right: 0; bottom: 0;
+    padding: 4px 6px env(safe-area-inset-bottom); background: color-mix(in srgb, var(--bg) 88%, transparent);
+    border-top: 1px solid var(--line); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  }
+  .bb-item {
+    display: grid; justify-items: center; gap: 1px; min-height: 54px; padding: 6px 2px; border: 0; background: none;
+    color: var(--muted); font: inherit; font-size: 11.5px; font-weight: 600; cursor: pointer; border-radius: 12px;
+  }
+  .bb-item span { font-size: 20px; line-height: 1.1; }
+  .bb-item.on { color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+  .bb-item:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .home .foot { display: none; }
+}
+@media (min-width: 1024px) { .learn-panel .course-row { padding: 10px 12px; } }
+@media (min-width: 1024px) {
+  .learn-panel .learn-menu > p { margin-bottom: 8px; }
+  .learn-panel .course-row { padding: 6px 12px; gap: 12px; }
+  .learn-panel .course-info { gap: 1px; }
+}
+@media (max-width: 1023px) { .home-head .head-settings { display: none; } }
+@media (min-width: 1024px) { .home .foot { margin-top: 12px; } .home { padding-bottom: 20px; } }
+/* sidebar: every tab visible (🎓 Học luật must not hide behind a horizontal scroll) */
+.side .tabs { flex-wrap: wrap; overflow: visible; }
+.side .tab { flex: 1 1 auto; min-height: 38px; padding: 0 10px; }
+.side .tab.close-x { flex: none; position: static; }

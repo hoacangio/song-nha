@@ -9,6 +9,13 @@ const S = {
   vi: {
     title: 'Học luật chơi bài',
     games: { xidach: 'Xì dách', tienlen: 'Tiến lên', holdem: "Hold'em" },
+    icons: { xidach: '21', tienlen: '2♠', holdem: 'A♥' },
+    menuTitle: '🎓 Học luật chơi bài',
+    menuSub: 'Học từng game, làm bài kiểm tra và nhận chứng chỉ.',
+    progress: (d, n, b) => `${d}/${n} bài · kiểm tra ${b}/${EXAM_SIZE}`,
+    open: 'Học',
+    continue: 'Tiếp tục',
+    review: 'Xem lại',
     exam: 'Kiểm tra',
     cert: 'Chứng chỉ',
     close: 'Đóng',
@@ -42,6 +49,13 @@ const S = {
   en: {
     title: 'Learn the games',
     games: { xidach: 'Xì dách', tienlen: 'Tiến lên', holdem: "Hold'em" },
+    icons: { xidach: '21', tienlen: '2♠', holdem: 'A♥' },
+    menuTitle: '🎓 Learn the games',
+    menuSub: 'Learn each game, take the exam and earn a certificate.',
+    progress: (d, n, b) => `${d}/${n} lessons · exam ${b}/${EXAM_SIZE}`,
+    open: 'Start',
+    continue: 'Continue',
+    review: 'Review',
     exam: 'Exam',
     cert: 'Certificate',
     close: 'Close',
@@ -223,4 +237,28 @@ export function learnView(app) {
       <nav class="tabs" role="tablist">${tabs}</nav>
       <div class="learn-body">${body}</div>
     </div></div>`;
+}
+
+/** The learning menu: one row per course with progress; used in the sidebar, the home page and the bottom bar. */
+export function learnMenu(app, { title = true } = {}) {
+  const x = s();
+  const rows = COURSE_IDS.map((id) => {
+    const prog = app.learnProg[id];
+    const d = lessonsDone(id, prog, learnLang());
+    const n = lessonCount(id, learnLang());
+    const done = isComplete(id, prog, learnLang());
+    const started = d > 0 || prog.best > 0;
+    const pct = Math.round(((d / n) * 0.5 + Math.min(1, prog.best / PASS_SCORE) * 0.5) * 100);
+    return `<li class="course-row ${done ? 'done' : ''}">
+      <span class="course-ico" aria-hidden="true">${esc(x.icons[id])}</span>
+      <div class="course-info"><b>${esc(COURSES[id].title(learnLang()))}${done ? ' 🏅' : ''}</b>
+        <span class="small muted">${esc(x.progress(d, n, prog.best))}</span>
+        <span class="course-bar" aria-hidden="true"><i style="width:${pct}%"></i></span></div>
+      <button class="btn sm ${done ? '' : 'primary'}" data-act="learnOpen" data-game="${id}" ${done ? 'data-tab="cert"' : ''}>${esc(done ? x.review : started ? x.continue : x.open)}</button>
+    </li>`;
+  }).join('');
+  return `<div class="learn-menu">
+    ${title ? `<h2>${esc(x.menuTitle)}</h2>` : ''}
+    <p class="small muted">${esc(x.menuSub)}</p>
+    <ul class="courses">${rows}</ul></div>`;
 }

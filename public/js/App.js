@@ -448,6 +448,11 @@ export const actions = {
     rememberTable(r.data.code, { game: app.home.game, host: true });
     go(`/t/${r.data.code}`);
   },
+  homeTab: (d) => {
+    app.home.mtab = ['play', 'recent', 'learn'].includes(d.v) ? d.v : 'play';
+    app.home.page = 0;
+    render();
+  },
   async joinRandom() {
     if (app.busy) return;
     app.busy = true;

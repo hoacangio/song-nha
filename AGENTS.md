@@ -66,6 +66,8 @@ fires due alarms (in-process only).
 
 No page scrolling: the table, home, settings sheet, rules sheet and learn guide must fit the viewport
 (360×640 up to 2560×1400). Long content goes into tabs inside a sheet, not a scrolling page.
+Below 1024px the home page shows one `[data-mtab]` section at a time (play / recent / learn), switched by
+the fixed `.bottom-bar`; at 1024px+ all sections are visible (learn menu in the right column).
 
 ## Security model
 
@@ -87,4 +89,5 @@ See the table in README → *Security model*. Key invariants with tests:
 - Step 3 (Texas Hold'em: 7-card evaluator, side pots, odd chip, short all-in rule, run-out, beginner guide): done.
 - Courses for every game with generated exams and PNG certificates: done (tests/unit/courses, tests/ui/learn).
 - Random table for public tables (host opt-in, LobbyDO): done.
+- Learn menu: desktop right column + table sidebar tab, mobile bottom bar (tests/ui/nav): done.
 - Commit `package-lock.json` once dependencies are installed with network access, then switch CI to `npm ci`.

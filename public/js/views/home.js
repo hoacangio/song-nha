@@ -2,6 +2,7 @@ import { esc } from '../lib/esc.js';
 import { t } from '../lib/i18n.js';
 import { GAME_VIEWS } from './games.js';
 import { cardHtml } from '../ui/cards.js';
+import { learnMenu } from './learn.js';
 
 const GAMES = [
   { id: 'xidach', icon: '21', ready: true },
@@ -10,7 +11,10 @@ const GAMES = [
 ];
 
 /** Recent tables per page: fewer on short screens so the home page never scrolls. */
-const pageSize = () => (typeof innerHeight === 'number' && innerHeight < 720 && innerWidth < 1024 ? 2 : 3);
+const pageSize = () => {
+  if (typeof innerWidth !== 'number' || innerWidth >= 1024) return 2; // desktop: shares the column with the learn menu
+  return innerHeight < 720 ? 5 : 7; // mobile: recent tables have their own tab
+};
 
 export function homeView(app) {
   const h = app.home;
@@ -25,11 +29,11 @@ export function homeView(app) {
       <div class="brand"><span class="logo" aria-hidden="true">♠</span><div><h1>Sòng Nhà</h1><p class="tagline">${esc(t('tagline'))}</p></div></div>
       <div class="head-tools">
         <button class="btn ghost sm" data-act="setLang" data-v="${app.lang === 'vi' ? 'en' : 'vi'}">${app.lang === 'vi' ? 'EN' : 'VI'}</button>
-        <button class="btn ghost icon" data-act="settingsOpen" data-v="table" aria-label="${esc(t('settings'))}" title="${esc(t('settings'))}">⚙</button>
+        <button class="btn ghost icon head-settings" data-act="settingsOpen" data-v="table" aria-label="${esc(t('settings'))}" title="${esc(t('settings'))}">⚙</button>
       </div>
     </header>
 
-    <div class="home-grid">
+    <div class="home-grid mtab-${MTABS.includes(h.mtab) ? h.mtab : 'play'}">
     <section class="hero" aria-hidden="true">
       <div class="hero-felt">
         <div class="hero-cards">${['AS', 'KH', 'QD', 'JC', 'TS'].map((c) => cardHtml(c, { size: 'lg' })).join('')}</div>
@@ -37,7 +41,7 @@ export function homeView(app) {
       </div>
     </section>
 
-    <section class="panel create">
+    <section class="panel create" data-mtab="play">
       <label class="field">
         <span>${esc(t('nickname'))}</span>
         <input id="nick" data-keep data-input="nick" maxlength="20" autocomplete="nickname" placeholder="${esc(t('nickPh'))}" value="${esc(app.nick)}">
@@ -54,13 +58,12 @@ export function homeView(app) {
       </div>
       <div class="create-row">
         <button class="btn" data-act="rulesOpen">⚙ ${esc(t('options'))}${h.draft?.[h.game] && Object.keys(h.draft[h.game]).length ? ' •' : ''}</button>
-        <button class="btn learn-btn" data-act="learnOpen" data-game="${h.game}" title="${esc(t('learn_open'))}" aria-label="${esc(t('learn_open'))}">🎓<span class="learn-txt"> ${esc(t('learn_short'))}</span></button>
         <button class="btn primary grow" data-act="createTable" ${app.busy ? 'disabled' : ''}>${esc(t('create'))}</button>
       </div>
     </section>
 
     <div class="side-col">
-    <section class="panel">
+    <section class="panel" data-mtab="play">
       <h2 class="join-h">${esc(t('join'))}</h2>
       <form class="join" data-submit="joinCode">
         <input id="joinCode" data-keep class="code-input" maxlength="12" autocapitalize="characters" autocomplete="off"
@@ -71,7 +74,7 @@ export function homeView(app) {
       ${h.error ? `<p class="error" role="alert">${esc(h.error)}</p>` : ''}
     </section>
 
-    <section class="panel">
+    <section class="panel" data-mtab="recent">
       <div class="recent-head"><h2>${esc(t('recent'))}</h2>${
         pages > 1
           ? `<div class="pager"><button class="btn ghost sm" data-act="page" data-v="${page - 1}" ${page === 0 ? 'disabled' : ''} aria-label="‹">‹</button>
@@ -95,12 +98,28 @@ export function homeView(app) {
           : `<p class="muted">${esc(t('noRecent'))}</p>`
       }
     </section>
+    <section class="panel learn-panel" data-mtab="learn">${learnMenu(app)}</section>
     </div>
     </div>
     ${app.installPrompt ? `<button class="btn ghost block" data-act="install">${esc(t('install'))}</button>` : ''}
     <footer class="foot">${esc(t('footer'))}</footer>
-  </main>`;
+  </main>
+  <nav class="bottom-bar" aria-label="${esc(t('menu'))}">
+    ${[
+      ['play', '🃏', t('nav_play')],
+      ['recent', '🕘', t('nav_recent')],
+      ['learn', '🎓', t('nav_learn')],
+    ]
+      .map(
+        ([id, ico, label]) =>
+          `<button class="bb-item ${(h.mtab || 'play') === id ? 'on' : ''}" data-act="homeTab" data-v="${id}" aria-current="${(h.mtab || 'play') === id ? 'page' : 'false'}"><span aria-hidden="true">${ico}</span>${esc(label)}</button>`,
+      )
+      .join('')}
+    <button class="bb-item" data-act="settingsOpen" data-v="table"><span aria-hidden="true">⚙</span>${esc(t('nav_settings'))}</button>
+  </nav>`;
 }
+
+const MTABS = ['play', 'recent', 'learn'];
 
 /** Fields of the "rules / options" sheet for the selected game (values restored from the draft). */
 export function rulesFields(app) {

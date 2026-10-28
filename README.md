@@ -157,7 +157,10 @@ free seat and at least one human online, falling back to any game.
 
 ## Courses & certificates
 
-Every game has a short course (🎓 on the home page, in the table menu, and “?” next to Hold'em cards):
+Every game has a short course. The learn menu (course list with progress and 🏅) lives in its own place:
+on desktop in the right column of the home page and as the 🎓 *Học luật* tab of the table sidebar; on
+mobile in the home **bottom bar** (🃏 Chơi · 🕘 Gần đây · 🎓 Học luật · ⚙ Cài đặt) and in the table ☰ drawer.
+“?” next to Hold'em cards opens the hand-ranking lesson. Each course has:
 
 | Course | Lessons | Exam questions (generated, graded by the game's own rule engine) |
 | --- | --- | --- |

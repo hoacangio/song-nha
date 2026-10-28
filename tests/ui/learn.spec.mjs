@@ -2,6 +2,7 @@
 // downloadable PNG certificate.
 import { test, expect } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
+import { openLearn } from './learn-nav.mjs';
 
 const overflow = (page) =>
   page.evaluate(() => {
@@ -71,12 +72,12 @@ for (const vp of [
   test(`three courses → exams → certificates at ${vp.width}x${vp.height}`, async ({ browser }) => {
     test.setTimeout(150_000);
     const { ctx, page, errors } = await open(browser, vp);
-    await page.click('[data-act=learnOpen]');
+    await openLearn(page);
     for (const game of ['xidach', 'tienlen', 'holdem']) await passCourse(page, game, vp);
     if (vp.width === 390) await page.screenshot({ path: 'test-results/learn-cert-390.png' });
     // Progress survives a reload
     await page.reload();
-    await page.click('[data-act=learnOpen]');
+    await openLearn(page);
     await expect(page.locator('[data-act=learnGame] >> text=🏅')).toHaveCount(3);
     expect(errors).toEqual([]);
     await ctx.close();
@@ -85,7 +86,7 @@ for (const vp of [
 
 test('a failed exam does not unlock the certificate', async ({ browser }) => {
   const { ctx, page } = await open(browser, { width: 390, height: 844, mobile: true });
-  await page.click('[data-act=learnOpen]');
+  await openLearn(page);
   await page.click('[data-act=learnGame][data-v=tienlen]');
   await page.click('.learn .tabs [data-act=learnTab][data-v=exam]');
   await page.click('[data-act=examStart]');
@@ -109,7 +110,7 @@ test('no saved name: the certificate asks for one, saves it, and it becomes the 
   const page = await ctx.newPage();
   await page.goto('/');
   // complete the Xì dách course without ever typing a name
-  await page.click('[data-act=learnOpen]');
+  await openLearn(page);
   await page.click('[data-act=learnGame][data-v=xidach]');
   for (const id of await page.locator('.learn .tabs [data-act=learnTab]').evaluateAll((els) => els.map((e) => e.dataset.v).filter((v) => v !== 'exam' && v !== 'cert')))
     await page.click(`.learn .tabs [data-act=learnTab][data-v=${id}]`);

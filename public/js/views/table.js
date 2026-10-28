@@ -3,6 +3,7 @@ import { t } from '../lib/i18n.js';
 import { qrSvg } from '../lib/qr.js';
 import { cardHtml, ringHtml, initials } from '../ui/cards.js';
 import { GAME_VIEWS } from './games.js';
+import { learnMenu } from './learn.js';
 
 export { GAME_VIEWS };
 
@@ -85,7 +86,7 @@ function seatsHtml(app, gv) {
     .join('');
 }
 
-const TABS = ['players', 'board', 'history', 'fairness', 'settings'];
+const TABS = ['players', 'board', 'history', 'fairness', 'learn', 'settings'];
 
 function sideHtml(app, gv) {
   const tab = app.ui.tab || 'players';
@@ -102,7 +103,9 @@ function sideHtml(app, gv) {
             ? historyTab(app)
             : tab === 'fairness'
               ? fairnessTab(app)
-              : settingsTab(app, gv)
+              : tab === 'learn'
+                ? learnMenu(app, { title: false })
+                : settingsTab(app, gv)
     }</div>`;
 }
 
@@ -179,7 +182,6 @@ function settingsTab(app, gv) {
   const personal = `
     <div class="row">
       <button class="btn sm" data-act="settingsOpen" data-v="table">⚙ ${esc(t('look'))}</button>
-      <button class="btn sm" data-act="learnOpen" data-game="${esc(s.game)}">🎓 ${esc(t('learn_open'))}</button>
     </div>`;
   if (!s.you.isHost) return personal;
   return `${personal}

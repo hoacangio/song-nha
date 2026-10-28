@@ -1,5 +1,6 @@
 // Hold'em UI: full hand with bots (call/check/raise flow), one-screen fit, learn overlay.
 import { test, expect } from '@playwright/test';
+import { openLearn, playTab } from './learn-nav.mjs';
 
 async function setup(browser, { width = 390, height = 844, mobile = true } = {}) {
   const ctx = await browser.newContext({ viewport: { width, height }, isMobile: mobile, hasTouch: mobile, locale: 'vi-VN' });
@@ -69,7 +70,7 @@ for (const vp of [
     test.setTimeout(120_000);
     const { ctx, page, errors } = await setup(browser, vp);
     // learn guide: every tab fits without scrolling
-    await page.click('[data-act=learnOpen]');
+    await openLearn(page, 'holdem');
     await expect(page.locator('[data-act=learnGame][data-v=holdem]')).toHaveClass(/on/);
     const tabs = await page.locator('.learn .tabs [data-act=learnTab]').evaluateAll((els) => els.map((e) => e.dataset.v));
     expect(tabs).toEqual(['rankings', 'flow', 'actions', 'tips', 'exam', 'cert']);
@@ -82,6 +83,7 @@ for (const vp of [
       expect(over, `learn tab ${tab}`).toBeLessThanOrEqual(1);
     }
     await page.click('.learn-head [data-act=learnClose]');
+    await playTab(page);
     await tableWithBots(page, 8);
     await page.click('[data-act=start]');
     await expect(page.locator('.my-hand .card')).toHaveCount(2);
