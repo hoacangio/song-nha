@@ -110,7 +110,11 @@ class EmuStorage {
   async fire() {
     if (this.alarmAt == null || this.alarmAt > Date.now()) return this.arm();
     this.alarmAt = null;
-    await this.owner.instance.alarm?.();
+    try {
+      await this.owner.instance.alarm?.();
+    } catch (e) {
+      console.error('alarm failed', e);
+    }
   }
 }
 

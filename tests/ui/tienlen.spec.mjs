@@ -11,10 +11,14 @@ async function setup(browser, { width = 390, height = 844 } = {}) {
   await page.fill('#nick', 'Hòa');
   await page.click('[data-act=setGame][data-v=tienlen]');
   // turn tới trắng off so the game always has turns to play
-  await page.click('details.opts summary');
+  await page.click('[data-act=rulesOpen]');
+  await page.click('[data-act=rulesTab][data-v=instant]');
   for (const k of ['instantDragon', 'instantFour2', 'instantSixPairs', 'instantFivePairSeq']) await page.uncheck(`#o-${k}`);
+  await page.click('.sheet.rules .btn.primary'); // save & close
   await page.click('[data-act=createTable]');
   await expect(page.locator('.seat.me')).toBeVisible();
+  // the options typed in the sheet reached the server
+  expect(await page.evaluate(() => window.App.app.table.state.opts.game.instantDragon)).toBe(false);
   for (let i = 0; i < 3; i++) await page.click('.actions [data-act=addBot]');
   await expect(page.locator('.seat:not(.empty)')).toHaveCount(4);
   await page.click('[data-act=start]');

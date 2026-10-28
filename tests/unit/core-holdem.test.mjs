@@ -205,3 +205,29 @@ test('timeouts check or fold; bots play whole hands; chips are conserved over ma
   }
   assert.ok(hands >= 10, `played ${hands} hands`);
 });
+
+test('a folded player who leaves keeps the seat until the hand ends (no crash at settlement)', async () => {
+  const { onLeave, SEAT_HOLD_MS } = await import('../../src/table/core.js');
+  // 120 s turns, so only the 60 s seat hold elapses (no turn times out meanwhile)
+  const t = createTable({ code: 'SONG-006', game: 'holdem', options: { turnSeconds: 120 }, hostKey: 'k', now: 0 });
+  for (const a of P.slice(0, 3)) await handle(t, a, { t: 'sit' }, 0);
+  await handle(t, P[0], { t: 'start' }, 0);
+  const folder = turn(t);
+  const seat = seatOf(t, folder.pid);
+  await handle(t, folder, { t: 'fold' }, 1);
+  // leaves the table and disconnects
+  await handle(t, folder, { t: 'stand' }, 2);
+  onLeave(t, folder.pid, 3);
+  await tick(t, 3 + SEAT_HOLD_MS + 1);
+  assert.ok(t.seats[seat], 'seat kept while the hand runs');
+  // finish the hand: everyone checks/calls down
+  for (let i = 0; i < 20 && t.hand.phase !== 'done'; i++) {
+    const a = turn(t);
+    const h = t.hand;
+    await handle(t, a, { t: h.currentBet > h.bet[h.turn] ? 'call' : 'check' }, 10 + i);
+  }
+  assert.equal(t.hand.phase, 'done');
+  assert.equal(t.seats[seat], null, 'removed after the hand');
+  const total = t.seats.reduce((s, x) => s + (x ? x.chips : 0), 0) + t.ledger[folder.pid].chips;
+  assert.equal(total, 3000, 'chips conserved including the player who left');
+});

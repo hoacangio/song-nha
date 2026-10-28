@@ -120,8 +120,12 @@ const everyoneAllInOrDone = (h) => {
   return actors.length === 0 || (actors.length === 1 && h.bet[actors[0]] >= h.currentBet);
 };
 
+/**
+ * Seats dealt into the running hand keep their seat until it ends — including folded players,
+ * whose chips are already in the pot and are settled at the end.
+ */
 export function involved(h, seat) {
-  return !!h && h.phase !== 'done' && h.players.includes(seat) && !h.folded[seat];
+  return !!h && h.phase !== 'done' && h.players.includes(seat);
 }
 
 function roundComplete(h) {
@@ -199,7 +203,7 @@ function finish(t, h, now) {
       return { amount: pot.amount, winners };
     });
   }
-  for (const p of h.players) t.seats[p].chips += won[p];
+  for (const p of h.players) if (t.seats[p]) t.seats[p].chips += won[p];
   h.result = {
     rows: h.players.map((p) => ({
       seat: p,
