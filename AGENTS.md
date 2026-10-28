@@ -75,6 +75,8 @@ end of app.css: felt + controls side by side (Tiến lên keeps its 13-card hand
 home, lesson list on the left of the course page. Short desktops (height after `--k` zoom < ~780px) drop the
 hero and move the learn panel under "create". Tests: tests/ui/landscape.spec.mjs. The table screen carries
 `game-<id>` for per-game CSS; seats get `at-top` / `at-bottom` by their position on the oval.
+Below 1024px every `.overlay > .sheet` (settings, rules, invite, ask-name) is a bottom sheet with a grab handle;
+dragging its top 56px down past ~120px calls the overlay's `data-act` close action (App.js pointer handlers).
 
 ## Security model
 

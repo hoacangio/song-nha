@@ -86,3 +86,46 @@ test('courses are a page: /hoc/<game>/<lesson> deep links, Back returns to the t
   expect(await page.evaluate(() => window.App.app.table.status)).toBe('open');
   await ctx.close();
 });
+
+test('mobile dialogs are bottom sheets that close with a swipe down; desktop keeps centred dialogs', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, locale: 'vi-VN' });
+  const page = await ctx.newPage();
+  await page.goto('/');
+  for (const open of ['[data-act=settingsOpen] >> nth=0', '[data-act=rulesOpen]']) {
+    if (open.includes('settings')) await page.click('.bottom-bar [data-act=settingsOpen]');
+    else await page.click(open);
+    const sheet = page.locator('.overlay > .sheet');
+    await expect(sheet).toBeVisible();
+    await page.waitForTimeout(350); // slide-up animation
+    const box = await sheet.boundingBox();
+    expect(Math.round(box.y + box.height)).toBe(844);
+    expect(Math.round(box.width)).toBe(390);
+    // drag the handle down
+    await page.mouse.move(box.x + box.width / 2, box.y + 10);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width / 2, box.y + 100, { steps: 6 });
+    await page.mouse.move(box.x + box.width / 2, box.y + 260, { steps: 6 });
+    await page.mouse.up();
+    await expect(page.locator('.overlay')).toHaveCount(0);
+  }
+  // a short drag snaps back
+  await page.click('.bottom-bar [data-act=settingsOpen]');
+  await page.waitForTimeout(350);
+  const b = await page.locator('.overlay > .sheet').boundingBox();
+  await page.mouse.move(b.x + 100, b.y + 10);
+  await page.mouse.down();
+  await page.mouse.move(b.x + 100, b.y + 40, { steps: 4 });
+  await page.mouse.up();
+  await expect(page.locator('.overlay')).toHaveCount(1);
+  await ctx.close();
+
+  const desk = await browser.newContext({ viewport: { width: 1280, height: 800 }, locale: 'vi-VN' });
+  const dp = await desk.newPage();
+  await dp.goto('/');
+  await dp.click('.home-head [data-act=settingsOpen]');
+  await dp.waitForTimeout(300);
+  const d = await dp.locator('.overlay > .sheet').boundingBox();
+  expect(d.y).toBeGreaterThan(20);
+  expect(d.y + d.height).toBeLessThan(780);
+  await desk.close();
+});

@@ -4,7 +4,7 @@ import { test, expect } from '@playwright/test';
 const over = (page) =>
   page.evaluate(() => ({
     h: document.documentElement.scrollHeight - innerHeight,
-    w: document.documentElement.scrollWidth - innerWidth,
+    w: document.documentElement.scrollWidth - document.documentElement.clientWidth, iw: innerWidth - document.documentElement.clientWidth,
   }));
 
 for (const vp of [
@@ -23,6 +23,7 @@ for (const vp of [
       const o = await over(page);
       expect(o.h, `${what} scrolls vertically`).toBeLessThanOrEqual(0);
       expect(o.w, `${what} scrolls horizontally`).toBeLessThanOrEqual(0);
+      expect(o.iw, `${what} is wider than the screen`).toBeLessThanOrEqual(0);
     };
     for (const tab of ['play', 'recent', 'learn']) {
       await page.click(`.bottom-bar [data-v=${tab}]`);
@@ -36,6 +37,7 @@ for (const vp of [
 
     await page.click('[data-act=setGame][data-v=holdem]');
     await page.click('[data-act=rulesOpen]');
+    await page.waitForTimeout(350); // bottom sheet slides up
     const sheet = await page.locator('.sheet.rules').boundingBox();
     expect(sheet.y + sheet.height).toBeLessThanOrEqual(vp.height);
     await page.click('.sheet.rules .learn-head [data-act=rulesClose]');

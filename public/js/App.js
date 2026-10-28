@@ -908,6 +908,34 @@ root.addEventListener('click', (e) => {
   e.preventDefault();
   fn({ ...el.dataset }, e);
 });
+// Bottom sheets (mobile): drag the top of a sheet down to close it.
+let sheetDrag = null;
+root.addEventListener('pointerdown', (e) => {
+  if (innerWidth >= 1024) return;
+  const sheet = e.target.closest('.overlay[data-act] > .sheet');
+  if (!sheet || e.target.closest('button, input, select, textarea, a')) return;
+  if (e.clientY - sheet.getBoundingClientRect().top > 56) return; // handle + title only
+  sheetDrag = { sheet, y0: e.clientY, dy: 0, act: sheet.parentElement.dataset.act };
+  sheet.classList.add('dragging');
+  sheet.classList.remove('settle');
+});
+root.addEventListener('pointermove', (e) => {
+  if (!sheetDrag) return;
+  if (!sheetDrag.sheet.isConnected) return void (sheetDrag = null);
+  sheetDrag.dy = Math.max(0, e.clientY - sheetDrag.y0);
+  sheetDrag.sheet.style.transform = `translateY(${sheetDrag.dy}px)`;
+});
+const endSheetDrag = () => {
+  if (!sheetDrag) return;
+  const { sheet, dy, act } = sheetDrag;
+  sheetDrag = null;
+  sheet.classList.remove('dragging');
+  if (dy > Math.min(120, sheet.offsetHeight * 0.25) && actions[act]) return void actions[act]({});
+  sheet.classList.add('settle');
+  sheet.style.transform = '';
+};
+root.addEventListener('pointerup', endSheetDrag);
+root.addEventListener('pointercancel', endSheetDrag);
 root.addEventListener('submit', (e) => {
   const form = e.target.closest('[data-submit]');
   if (!form) return;
