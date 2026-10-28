@@ -338,10 +338,26 @@ code { font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; }
 .card .cs { font-size: calc(var(--cw) * 0.5); margin-top: 18%; margin-left: 18%; }
 .card.sm .ci, .card.xs .ci { position: static; font-size: calc(var(--cw) * 0.42); }
 .card.sm .cs, .card.xs .cs { display: none; }
+/* Card backs follow the table theme. Contrast is guaranteed by construction (and checked in
+   tests/unit/card-backs): a light paper frame + dark hairline separate the card from any felt or
+   surface; the back colour sits away from the felt hue; motif ink contrasts the back colour. */
 .card.back {
-  background: var(--cb-pattern, repeating-linear-gradient(45deg, var(--cb-a) 0 3px, var(--cb-b) 3px 6px));
-  border: 2px solid #fffaf3;
+  --cb-frame: calc(var(--cw) * 0.07);
+  background:
+    radial-gradient(ellipse at 50% 50%, transparent 55%, rgb(0 0 0 / 0.18)) padding-box,
+    var(--cb-pattern) padding-box,
+    linear-gradient(160deg, var(--cb-a), var(--cb-b)) padding-box;
+  border: var(--cb-frame) solid var(--cb-paper, #fffaf3);
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.45), 0 1px 3px rgb(0 0 0 / 0.35),
+    inset 0 0 0 1px color-mix(in srgb, var(--cb-ink) 70%, transparent);
+  overflow: hidden;
 }
+.card.back::after {
+  content: var(--cb-emblem, '♠'); color: var(--cb-ink); font-size: calc(var(--cw) * 0.42); line-height: 1; font-weight: 700;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.35); pointer-events: none;
+}
+.card.back.xs, .card.back.sm { --cb-frame: 2px; }
+.card.back.xs::after, .card.back.sm::after { content: none; }
 .deal { animation: deal 380ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
 .flip { animation: flip 450ms ease-out both; }
 .chip-in { animation: chip-in 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
@@ -436,28 +452,36 @@ code { font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; }
 :root, [data-table='vegas'] {
   --felt: #145238; --felt-hi: #237a52; --felt-ink: #f4efe6;
   --rail: #4a2416; --rail-trim: #c9a227;
-  --cb-a: #b3262e; --cb-b: #7c151b;
+  /* card back: casino red, gold diamond lattice, spade */
+  --cb-a: #c0303a; --cb-b: #7c151b; --cb-ink: #f1c24c; --cb-emblem: '♠';
+  --cb-pattern: repeating-linear-gradient(45deg, rgb(241 194 76 / 0.32) 0 1px, transparent 1px 7px),
+    repeating-linear-gradient(-45deg, rgb(241 194 76 / 0.32) 0 1px, transparent 1px 7px);
   --backdrop: radial-gradient(ellipse at 50% 0%, rgb(201 162 39 / 0.10), transparent 60%);
   --felt-mark: 'LAS VEGAS';
   --felt-pattern: radial-gradient(circle at 50% 50%, transparent 38%, rgb(255 255 255 / 0.035) 38.3%, transparent 38.8%);
   --theme-swatch: linear-gradient(135deg, #237a52, #145238 60%, #4a2416 60%);
 }
-/* Macau: lacquer-red felt, black rail with gold, gold-on-red card backs, lattice pattern. */
+/* Macau: lacquer-red felt, black rail with gold, black-and-gold card backs, lattice pattern. */
 :root[data-table='macau'], [data-table='macau'] {
   --felt: #6e1016; --felt-hi: #a31d24; --felt-ink: #ffe9b8;
   --rail: #160d0b; --rail-trim: #d4af37;
-  --cb-a: #d4af37; --cb-b: #8f1d21;
+  /* card back: black lacquer, gold lattice, 福 (on red felt) */
+  --cb-a: #2a1a14; --cb-b: #0e0806; --cb-ink: #e3bf4f; --cb-emblem: '福';
+  --cb-pattern: repeating-linear-gradient(0deg, rgb(227 191 79 / 0.28) 0 1px, transparent 1px 6px),
+    repeating-linear-gradient(90deg, rgb(227 191 79 / 0.28) 0 1px, transparent 1px 6px);
   --backdrop: radial-gradient(ellipse at 50% 0%, rgb(212 175 55 / 0.14), transparent 60%);
   --felt-mark: 'MACAU';
   --felt-pattern: repeating-linear-gradient(45deg, rgb(255 215 120 / 0.035) 0 1px, transparent 1px 22px),
     repeating-linear-gradient(-45deg, rgb(255 215 120 / 0.035) 0 1px, transparent 1px 22px);
   --theme-swatch: linear-gradient(135deg, #a31d24, #6e1016 60%, #d4af37 60%);
 }
-/* Phú Quốc: sea-turquoise felt, driftwood rail with sand trim, wave pattern. */
+/* Phú Quốc: sea-turquoise felt, driftwood rail with sand trim, wave pattern, sunset-coral card backs. */
 :root[data-table='phuquoc'], [data-table='phuquoc'] {
   --felt: #075a66; --felt-hi: #0f8c96; --felt-ink: #effcfa;
   --rail: #a07a4c; --rail-trim: #f3e2bf;
-  --cb-a: #13a3a8; --cb-b: #0a5e70;
+  /* card back: sunset coral with white waves, sun (complements the sea-turquoise felt) */
+  --cb-a: #e2684b; --cb-b: #b0432c; --cb-ink: #fff4e3; --cb-emblem: '✹';
+  --cb-pattern: repeating-radial-gradient(circle at 50% 120%, transparent 0 4px, rgb(255 244 227 / 0.35) 4px 5px);
   --backdrop: radial-gradient(ellipse at 50% 0%, rgb(56 189 196 / 0.14), transparent 60%);
   --felt-mark: 'PHÚ QUỐC';
   --felt-pattern: repeating-radial-gradient(ellipse at 50% 120%, transparent 0 18px, rgb(255 255 255 / 0.04) 18px 19px);
@@ -467,7 +491,9 @@ code { font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; }
 :root[data-table='cambodia'], [data-table='cambodia'] {
   --felt: #3a1d57; --felt-hi: #5c3285; --felt-ink: #fff3dc;
   --rail: #8a6a45; --rail-trim: #d79b2c;
-  --cb-a: #e29a24; --cb-b: #8c4b12;
+  /* card back: saffron with lotus dots, lotus (on royal-purple felt) */
+  --cb-a: #eba02c; --cb-b: #b8681a; --cb-ink: #3b1550; --cb-emblem: '❀';
+  --cb-pattern: radial-gradient(circle, rgb(59 21 80 / 0.35) 1.2px, transparent 1.6px) 0 0 / 7px 7px;
   --backdrop: radial-gradient(ellipse at 50% 0%, rgb(215 155 44 / 0.12), transparent 60%);
   --felt-mark: 'CAMBODIA';
   --felt-pattern: radial-gradient(circle, rgb(255 220 160 / 0.05) 1.5px, transparent 2px) 0 0 / 26px 26px;
@@ -487,6 +513,9 @@ code { font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; }
   background: var(--felt-pattern, none), radial-gradient(ellipse at 50% 40%, var(--felt-hi), var(--felt) 72%);
   box-shadow: inset 0 0 0 1px var(--rail-trim);
 }
+.table-pick .mini-felt { display: flex; align-items: center; justify-content: center; }
+.table-pick .mini-felt .card { --cw: 15px; transform: rotate(-8deg); }
+.table-pick .mini-felt .card + .card { margin-left: -6px; transform: rotate(8deg); }
 .sound-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .sound-row input[type=range] { flex: 1; min-width: 120px; accent-color: var(--brand); }
 

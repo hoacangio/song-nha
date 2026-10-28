@@ -51,7 +51,7 @@ export function tablePicker(app) {
   return `<div class="tables" role="radiogroup" aria-label="${esc(t('tableTheme'))}">
     ${TABLE_THEMES.map(
       (id) => `<button class="table-pick ${app.tableTheme === id ? 'on' : ''}" role="radio" aria-checked="${app.tableTheme === id}"
-        data-act="setTable" data-v="${id}" data-table="${id}"><span class="mini-felt" aria-hidden="true"></span>${esc(t(`table_${id}`))}</button>`,
+        data-act="setTable" data-v="${id}" data-table="${id}"><span class="mini-felt" aria-hidden="true"><span class="card back sm"></span><span class="card back sm"></span></span>${esc(t(`table_${id}`))}</button>`,
     ).join('')}
   </div>`;
 }
