@@ -29,6 +29,12 @@ jobs:
         run: npm run test:smoke
       - name: Protocol security tests
         run: npm run test:security
+      # Same smoke test on the real Workers runtime (workerd via wrangler dev), not the Node emulator.
+      - name: Smoke test on workerd (wrangler dev)
+        run: |
+          WRANGLER_SEND_METRICS=false npx wrangler dev --port 8788 --ip 127.0.0.1 > wrangler-dev.log 2>&1 &
+          for i in $(seq 1 60); do curl -sf http://127.0.0.1:8788/ > /dev/null && break; sleep 1; done
+          node scripts/remote-smoke.mjs http://127.0.0.1:8788 || { tail -80 wrangler-dev.log; exit 1; }
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
       - name: UI tests (Playwright)
@@ -52,7 +58,11 @@ jobs:
           node-version: 22
       - run: npm install --no-audit --no-fund
       - uses: cloudflare/wrangler-action@v3
+        id: deploy
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           wranglerVersion: "4"
+      # Post-deploy check on production; results appear as annotations in the run summary.
+      - name: Production smoke test
+        run: node scripts/remote-smoke.mjs "${{ steps.deploy.outputs.deployment-url }}"
