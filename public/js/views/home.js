@@ -54,7 +54,7 @@ export function homeView(app) {
       </div>
       <div class="create-row">
         <button class="btn" data-act="rulesOpen">⚙ ${esc(t('options'))}${h.draft?.[h.game] && Object.keys(h.draft[h.game]).length ? ' •' : ''}</button>
-        ${h.game === 'holdem' ? `<button class="btn learn-btn" data-act="learnOpen" data-v="rankings" title="${esc(t('learn_open'))}" aria-label="${esc(t('learn_open'))}">🎓<span class="learn-txt"> ${esc(t('learn_short'))}</span></button>` : ''}
+        <button class="btn learn-btn" data-act="learnOpen" data-game="${h.game}" title="${esc(t('learn_open'))}" aria-label="${esc(t('learn_open'))}">🎓<span class="learn-txt"> ${esc(t('learn_short'))}</span></button>
         <button class="btn primary grow" data-act="createTable" ${app.busy ? 'disabled' : ''}>${esc(t('create'))}</button>
       </div>
     </section>

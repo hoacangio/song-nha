@@ -179,7 +179,7 @@ function settingsTab(app, gv) {
   const personal = `
     <div class="row">
       <button class="btn sm" data-act="settingsOpen" data-v="table">⚙ ${esc(t('look'))}</button>
-      ${s.game === 'holdem' ? `<button class="btn sm" data-act="learnOpen" data-v="rankings">🎓 ${esc(t('learn_open'))}</button>` : ''}
+      <button class="btn sm" data-act="learnOpen" data-game="${esc(s.game)}">🎓 ${esc(t('learn_open'))}</button>
     </div>`;
   if (!s.you.isHost) return personal;
   return `${personal}

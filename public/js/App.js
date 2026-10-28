@@ -9,7 +9,9 @@ import { api } from './services/api.js';
 import { TableSocket } from './services/socket.js';
 import { homeView, rulesView, rulesFields } from './views/home.js';
 import { settingsView } from './ui/accent.js';
-import { learnView, newQuiz } from './views/learn.js';
+import { learnView, learnLang } from './views/learn.js';
+import { COURSES, COURSE_IDS, PASS_SCORE, EXAM_SIZE, isComplete, normalizeProgress } from './learn/index.js';
+import { drawCertificate, certificateId } from './learn/certificate.js';
 import { tableView, tableUrl } from './views/table.js';
 import { clampBet } from './views/xidach.js';
 import { GAME_VIEWS } from './views/games.js';
@@ -31,7 +33,8 @@ const app = {
   tableTheme: ['vegas', 'macau', 'phuquoc', 'cambodia'].includes(load('sn.table', '')) ? load('sn.table', '') : 'vegas',
   accent: normalizeAccent(load('sn.accent', 'terracotta')),
   birthYear: isBirthYear(load('sn.birthYear', null)) ? load('sn.birthYear', null) : null,
-  sound: load('sn.sound', false),
+  sound: load('sn.sound', true),
+  learnProg: normalizeProgress(load('sn.learnProg', {})),
   volume: load('sn.volume', 0.7),
   recent: load('sn.recent', []),
   home: { game: 'xidach', page: 0, error: '' },
@@ -157,6 +160,34 @@ function refreshSettings() {
   const focusId = document.activeElement?.id;
   sheet.innerHTML = fresh.innerHTML;
   if (focusId) document.getElementById(focusId)?.focus({ preventScroll: true });
+}
+
+/** Marks the open lesson tab as read. */
+function markSeen() {
+  const L = app.ui.learn;
+  if (!L) return;
+  const ids = COURSES[L.game].lessons(learnLang()).map((l) => l.id);
+  const prog = app.learnProg[L.game];
+  if (ids.includes(L.tab) && !prog.seen.includes(L.tab)) {
+    prog.seen.push(L.tab);
+    save('sn.learnProg', app.learnProg);
+  }
+}
+
+/** Draws the certificate for the open course (only when the course is complete). */
+async function makeCertificate(name) {
+  const game = app.ui.learn?.game;
+  const prog = game && app.learnProg[game];
+  if (!prog || !isComplete(game, prog, learnLang())) return;
+  const who = (name ?? (app.ui.cert?.game === game ? app.ui.cert.name : app.nick) ?? '').trim() || 'Sòng Nhà';
+  const date = (prog.passedAt || new Date().toISOString()).slice(0, 10);
+  const courseTitle = COURSES[game].title(learnLang());
+  const id = await certificateId({ name: who, course: game, score: prog.best, total: EXAM_SIZE, date });
+  const accent = getComputedStyle(document.documentElement).getPropertyValue('--brand').trim() || '#b4532a';
+  const cv = drawCertificate({ name: who, courseTitle, score: prog.best, total: EXAM_SIZE, date, id, lang: learnLang(), accent });
+  // A data: URL works for both the preview (CSP allows img-src data:) and the download.
+  app.ui.cert = { game, name: who, id, url: cv.toDataURL('image/png') };
+  if (app.ui.learn?.tab === 'cert') render();
 }
 
 // ---------- routing ----------
@@ -495,38 +526,75 @@ export const actions = {
     app.ui.rules = true;
     render();
   },
+  // ----- learn: courses, exams, certificates -----
   learnOpen: (d) => {
-    app.ui.learn = d.v || 'rankings';
+    const game = COURSE_IDS.includes(d.game) ? d.game : app.table?.state?.game || app.home.game;
+    const first = COURSES[game].lessons(learnLang())[0].id;
+    app.ui.learn = { game, tab: d.tab || first };
     app.ui.drawer = false;
+    markSeen();
+    render();
+  },
+  learnGame: (d) => {
+    if (!COURSE_IDS.includes(d.v)) return;
+    app.ui.learn = { game: d.v, tab: COURSES[d.v].lessons(learnLang())[0].id };
+    markSeen();
     render();
   },
   learnTab: (d) => {
-    app.ui.learn = d.v;
+    app.ui.learn = { ...app.ui.learn, tab: d.v };
+    markSeen();
+    if (d.v === 'cert') makeCertificate();
     render();
   },
   learnClose: () => {
     app.ui.learn = null;
     render();
   },
-  quizPick: (d) => {
-    if (app.ui.quizPick || !app.ui.quiz) return;
-    app.ui.quizPick = d.v;
-    app.ui.quizCount = (app.ui.quizCount || 0) + 1;
-    if (d.v === app.ui.quiz.answer) {
-      app.ui.quizScore = (app.ui.quizScore || 0) + 1;
-      sfx('win');
-    } else sfx('lose');
+  examStart: () => {
+    const game = app.ui.learn.game;
+    app.ui.exam = { game, qs: COURSES[game].exam(learnLang()), i: 0, score: 0, picked: null };
     render();
   },
-  quizNext: () => {
-    app.ui.quiz = newQuiz();
-    app.ui.quizPick = null;
+  examPick: (d) => {
+    const ex = app.ui.exam;
+    if (!ex || ex.picked != null || ex.i >= ex.qs.length) return;
+    ex.picked = d.v;
+    if (d.v === ex.qs[ex.i].answer) {
+      ex.score += 1;
+      sfx('chip');
+    } else sfx('pass');
     render();
   },
-  handHelp: () => {
-    app.ui.learn = 'rankings';
+  examNext: () => {
+    const ex = app.ui.exam;
+    if (!ex || ex.picked == null) return;
+    ex.i += 1;
+    ex.picked = null;
+    if (ex.i >= ex.qs.length) {
+      const prog = app.learnProg[ex.game];
+      if (ex.score > prog.best) prog.best = ex.score;
+      if (ex.score >= PASS_SCORE && !prog.passedAt) prog.passedAt = new Date().toISOString();
+      save('sn.learnProg', app.learnProg);
+      sfx(ex.score >= PASS_SCORE ? 'bigwin' : 'lose');
+    }
     render();
   },
+  certMake: () => {
+    const name = (document.getElementById('certName')?.value || '').trim().slice(0, 40);
+    makeCertificate(name || app.nick);
+  },
+  certDownload: () => {
+    const c = app.ui.cert;
+    if (!c?.url) return;
+    const a = document.createElement('a');
+    a.href = c.url;
+    a.download = `song-nha-chung-chi-${c.game}.png`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  },
+  handHelp: () => actions.learnOpen({ game: 'holdem', tab: 'rankings' }),
   // Tiến lên
   toggleCard: (d) => {
     const sel = (app.ui.sel ||= new Set());

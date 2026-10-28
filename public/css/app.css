@@ -684,3 +684,41 @@ code { font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; }
 .ranking b { display: inline-block; min-width: 44px; color: #ffd9a8; }
 /* An overlay that is already open does not replay its open animation when the UI updates. */
 .overlay.steady, .overlay.steady .sheet { animation: none; }
+
+/* ---------- courses, exams, certificates ---------- */
+.course-chips { display: flex; gap: 6px; }
+.course-chips .chip-btn { min-height: 34px; font-size: 13px; padding: 0 10px; }
+.learn .tabs { scrollbar-width: none; }
+.exam, .exam-intro, .exam-result, .cert, .cert-need { display: grid; gap: 8px; }
+.q-prompt { margin: 2px 0; }
+.q-groups { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.q-group { grid-column: 1 / -1; background: var(--bg); border-radius: 10px; padding: 6px 8px; }
+.q-group.half { grid-column: auto; }
+.q-group .rank-cards { margin-top: 4px; flex-wrap: nowrap; }
+.q-group .card { --cw: min(40px, 9vw); }
+.q-options { display: grid; gap: 6px; }
+.q-options.grid2 { grid-template-columns: 1fr 1fr; }
+.btn.opt { min-height: 44px; white-space: normal; line-height: 1.2; padding: 6px 10px; font-size: 14px; }
+.btn.opt.right { background: color-mix(in srgb, var(--up) 30%, var(--surface)); border-color: var(--up); opacity: 1; }
+.btn.opt.wrong { background: color-mix(in srgb, var(--down) 30%, var(--surface)); border-color: var(--down); opacity: 1; }
+.btn.opt.dim { opacity: 0.45; }
+.q-explain { margin: 0; font-size: 13px; }
+.exam-result { text-align: center; justify-items: center; padding-top: 10px; }
+.big-score { font-size: 48px; font-weight: 900; font-variant-numeric: tabular-nums; }
+.exam-result.pass .big-score { color: var(--up); }
+.exam-result.fail .big-score { color: var(--down); }
+.checklist { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
+.checklist li { background: var(--bg); border-radius: 8px; padding: 8px 10px; font-size: 14px; }
+.checklist li.ok { color: var(--up); }
+.cert-name { flex-wrap: nowrap; }
+.cert-name label { flex: none; }
+.cert-name input { min-width: 0; }
+.cert-img { width: 100%; aspect-ratio: 1600 / 1131; border-radius: 8px; box-shadow: var(--shadow); display: block; background: #f1e6cf; }
+.cert-img.placeholder { display: grid; place-items: center; color: #6b5a48; font-size: 14px; }
+@media (max-height: 700px) {
+  .hide-short { display: none; }
+  .course-chips .chip-btn { min-height: 30px; }
+  .q-group .card { --cw: min(34px, 8.6vw); }
+  .btn.opt { min-height: 38px; font-size: 13px; }
+  .big-score { font-size: 36px; }
+}

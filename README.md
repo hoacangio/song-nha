@@ -22,10 +22,10 @@ no cash-out, no prizes, no ads). Create a private table, share the link or QR co
 - Mobile-first: the table fits one screen without scrolling on 390×844, 375×667, 360×640 and desktop.
   Sidebar on ≥1024 px, drawer below.
 - Dark theme by default, light option; casino table themes (Las Vegas, Macau, Phú Quốc, Cambodia);
-  Ngũ hành accent palette with mệnh by birth year; synthesised sound effects (off by default); Vietnamese/English.
+  Ngũ hành accent palette with mệnh by birth year; synthesised sound effects (on by default); Vietnamese/English.
 - Pages and sheets never need page scrolling (home, settings, rules options, learn guide) on 360×640 → 2560×1400.
 - App-like motion (deal, flip, chip, result pop) that survives re-renders; honours `prefers-reduced-motion`.
-  Haptics on your turn; sounds off by default.
+  Haptics on your turn; sound effects on by default (toggle + volume in ⚙ Settings).
 - PWA (manifest, network-first service worker, install prompt), strict CSP.
 
 ## Architecture
@@ -141,7 +141,22 @@ HTTP: `POST /api/tables {secret, game, options}` → `{code}` · `GET /api/table
 | All-in run-out | When nobody can bet any more, live hands are shown and the board is dealt street by street (1.4 s apart) |
 | Fold-out | The last player wins without showing |
 | Timer | Timeout: check if possible, otherwise fold |
-| Beginner guide | "Học luật Poker": hand rankings with examples, how a hand works, actions & side pots, tips, and a practice quiz (who wins?) |
+| Beginner course | See *Courses & certificates* below |
+
+## Courses & certificates
+
+Every game has a short course (🎓 on the home page, in the table menu, and “?” next to Hold'em cards):
+
+| Course | Lessons | Exam questions (generated, graded by the game's own rule engine) |
+| --- | --- | --- |
+| Xì dách | goal, counting, special hands, turns & dealer, payouts | how a hand counts, player vs dealer, payout + knowledge questions |
+| Tiến lên | card order, combinations, turns, chopping 2s, end & scoring | what combination, can it beat the table, chop rules + knowledge questions |
+| Hold'em | hand rankings, how a hand works, actions & side pots, tips | who wins at showdown, best five-card hand + knowledge questions |
+
+Each exam has 10 questions; 8 correct passes. Opening every lesson and passing the exam unlocks a
+certificate drawn on a canvas on the device (name, course, score, date, an ID = SHA-256 of those fields)
+and downloadable as a PNG. Progress is stored per device (localStorage) — nothing is sent to the server.
+Every lesson, question and the certificate fit the screen without scrolling (tested at 360×640, 390×844, 1750×1214).
 
 ## Development
 

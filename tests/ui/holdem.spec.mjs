@@ -70,8 +70,11 @@ for (const vp of [
     const { ctx, page, errors } = await setup(browser, vp);
     // learn guide: every tab fits without scrolling
     await page.click('[data-act=learnOpen]');
-    for (const tab of ['rankings', 'flow', 'actions', 'tips', 'quiz']) {
-      await page.click(`[data-act=learnTab][data-v=${tab}]`);
+    await expect(page.locator('[data-act=learnGame][data-v=holdem]')).toHaveClass(/on/);
+    const tabs = await page.locator('.learn .tabs [data-act=learnTab]').evaluateAll((els) => els.map((e) => e.dataset.v));
+    expect(tabs).toEqual(['rankings', 'flow', 'actions', 'tips', 'exam', 'cert']);
+    for (const tab of tabs) {
+      await page.click(`.learn .tabs [data-act=learnTab][data-v=${tab}]`);
       const over = await page.evaluate(() => {
         const b = document.querySelector('.learn-body');
         return b.scrollHeight - b.clientHeight;

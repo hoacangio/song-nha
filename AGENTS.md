@@ -21,7 +21,8 @@ src/games/<game>/engine.js game engine (common interface — see README)
 src/lib/protocol.js        message whitelist, validation, nick cleaning, token bucket
 public/js/domain/          pure rules shared with the client (cards, shuffle, xidach, tienlen, holdem, fengshui)
 public/js/App.js           state, router, render loop, actions, socket handling
-public/js/views/           (app) => HTML string; game views registered in views/table.js GAME_VIEWS
+public/js/views/           (app) => HTML string; game views registered in views/games.js GAME_VIEWS
+public/js/learn/           courses: lessons + exam generators per game (pure), certificate canvas
 public/js/ui/, lib/        cards, ring, accent picker, esc, i18n, qr, csv, motion, store
 scripts/local-server.mjs   offline server running the real DO classes on Node 22
 tests/unit|security|ui     node:test unit + protocol tests, Playwright UI tests
@@ -83,4 +84,5 @@ See the table in README → *Security model*. Key invariants with tests:
 - Step 1 (lobby + table actor + Xì dách): done.
 - Step 2 (Tiến lên miền Nam: combos, chặt heo toggles, tới trắng, scoring table): done.
 - Step 3 (Texas Hold'em: 7-card evaluator, side pots, odd chip, short all-in rule, run-out, beginner guide): done.
+- Courses for every game with generated exams and PNG certificates: done (tests/unit/courses, tests/ui/learn).
 - Commit `package-lock.json` once dependencies are installed with network access, then switch CI to `npm ci`.

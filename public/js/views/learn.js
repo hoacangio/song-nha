@@ -1,199 +1,210 @@
-// "Học luật Poker" — a beginner's guide to Texas Hold'em with a practice quiz.
+// "Học luật chơi bài": a course per game (lessons → exam → downloadable certificate).
+// Every tab fits the screen without scrolling.
 import { esc } from '../lib/esc.js';
 import { getLang } from '../lib/i18n.js';
 import { cardHtml } from '../ui/cards.js';
-import { bestHand, CATEGORIES } from '../domain/holdem.js';
-import { DECK } from '../domain/cards.js';
+import { COURSES, COURSE_IDS, EXAM_SIZE, PASS_SCORE, isComplete, lessonsDone, lessonCount } from '../learn/index.js';
 
-const C = {
+const S = {
   vi: {
-    title: 'Học luật Poker (Texas Hold’em)',
-    tabs: { rankings: 'Thứ tự bài', flow: 'Cách chơi', actions: 'Hành động', tips: 'Mẹo', quiz: 'Luyện tập' },
-    rankIntro: 'Dùng 5 lá tốt nhất từ 2 lá riêng + 5 lá chung. Mạnh → yếu (chạm để xem giải thích):',
-    ranks: {
-      straightFlush: ['Thùng phá sảnh', '5 lá liên tiếp cùng chất. A-K-Q-J-10 cùng chất gọi là Royal Flush.'],
-      quads: ['Tứ quý', '4 lá cùng số.'],
-      fullHouse: ['Cù lũ', '1 bộ ba + 1 đôi. So bộ ba trước.'],
-      flush: ['Thùng', '5 lá cùng chất, không cần liên tiếp. So lá cao nhất.'],
-      straight: ['Sảnh', '5 lá liên tiếp, khác chất. A có thể đứng cuối (10-J-Q-K-A) hoặc đầu (A-2-3-4-5).'],
-      trips: ['Sám cô', '3 lá cùng số.'],
-      twoPair: ['Thú (hai đôi)', 'Hai đôi khác nhau. So đôi lớn, rồi đôi nhỏ, rồi lá lẻ.'],
-      pair: ['Đôi', '2 lá cùng số. Hòa thì so các lá lẻ (kicker).'],
-      high: ['Mậu thầu', 'Không có gì: so lá cao nhất.'],
-    },
-    rankNote: 'Chất không phân hơn thua trong Poker: hai tay bằng nhau thì chia đôi pot.',
-    flow: [
-      ['Blind', 'Hai người bên trái nút Dealer (D) bỏ tiền bắt buộc: Small Blind (SB) và Big Blind (BB). Nút D xoay vòng mỗi ván.'],
-      ['Preflop', 'Mỗi người nhận 2 lá úp. Người bên trái BB nói trước, lần lượt theo chiều kim đồng hồ.'],
-      ['Flop', 'Lật 3 lá chung. Vòng cược mới, bắt đầu từ người còn lại đầu tiên bên trái nút D.'],
-      ['Turn', 'Lật lá chung thứ 4. Thêm một vòng cược.'],
-      ['River', 'Lật lá chung thứ 5. Vòng cược cuối.'],
-      ['Showdown', 'Người còn lại lật bài; tay 5 lá mạnh nhất thắng pot. Nếu mọi người khác bỏ bài, người còn lại thắng ngay, không cần lật.'],
-    ],
-    actions: [
-      ['Bỏ bài (Fold)', 'Bỏ tay bài, mất số chip đã bỏ vào pot.'],
-      ['Xem (Check)', 'Không cược thêm — chỉ được khi chưa ai cược ở vòng này.'],
-      ['Theo (Call)', 'Bỏ thêm chip cho bằng mức cược cao nhất.'],
-      ['Cược / Tố (Bet / Raise)', 'Đặt cược hoặc nâng mức cược. Mức tố tối thiểu = mức nâng gần nhất (ít nhất 1 BB).'],
-      ['All-in', 'Bỏ hết chip. Nếu ít chip hơn mức cược, bạn chỉ thắng được phần tương ứng (main pot); phần dư thành side pot cho những người còn lại.'],
-    ],
-    sideTitle: 'Ví dụ side pot',
-    side: 'An all-in 50, Bình và Cúc mỗi người 200 → main pot 150 (cả ba có quyền thắng) và side pot 300 (chỉ Bình và Cúc).',
-    tips: [
-      'Bắt đầu chặt tay: chơi đôi lớn (AA, KK, QQ, JJ), A-K, A-Q; bỏ phần lớn các tay nhỏ lẻ.',
-      'Vị trí rất quan trọng: nói sau (gần nút D) giúp bạn có nhiều thông tin hơn.',
-      'Đừng theo chỉ vì đã bỏ nhiều chip vào pot — chip đã bỏ không còn là của bạn.',
-      'Nhìn bài chung: có 3–4 lá cùng chất hay liên tiếp thì đối thủ có thể có Thùng hoặc Sảnh.',
-      'Dùng nút “?” cạnh bài của bạn để xem nhanh thứ tự bài khi đang chơi.',
-    ],
-    quizQ: 'Ai thắng ván này?',
-    quizA: 'Tay A',
-    quizB: 'Tay B',
-    quizTie: 'Hòa (chia pot)',
-    quizNext: 'Câu khác',
-    board: 'Bài chung',
+    title: 'Học luật chơi bài',
+    games: { xidach: 'Xì dách', tienlen: 'Tiến lên', holdem: "Hold'em" },
+    exam: 'Kiểm tra',
+    cert: 'Chứng chỉ',
+    close: 'Đóng',
+    intro: (n, p) => `${n} câu hỏi, đúng từ ${p} câu trở lên là đạt. Câu hỏi được tạo ngẫu nhiên và chấm theo đúng luật của game.`,
+    best: (b) => `Điểm cao nhất: ${b}/${EXAM_SIZE}`,
+    start: 'Bắt đầu kiểm tra',
+    q: (i, n, k) => `Câu ${i}/${n} · đúng ${k}`,
     right: 'Chính xác!',
     wrong: 'Chưa đúng.',
-    score: 'Điểm',
-    winner: (w) => (w === 'tie' ? 'Hai tay bằng nhau.' : `Tay ${w.toUpperCase()} thắng.`),
-    close: 'Đóng',
-    funNote: 'Chỉ để giải trí – không dùng tiền thật',
+    next: 'Câu tiếp',
+    result: 'Xem kết quả',
+    passed: (sc) => `Đạt! ${sc}/${EXAM_SIZE} câu đúng.`,
+    failed: (sc) => `Chưa đạt: ${sc}/${EXAM_SIZE}. Cần ${PASS_SCORE} câu đúng.`,
+    retry: 'Làm lại',
+    getCert: 'Nhận chứng chỉ 🏅',
+    readAll: 'Hãy đọc hết các bài học để nhận chứng chỉ.',
+    needTitle: 'Để nhận chứng chỉ khoá này:',
+    needLessons: (d, n) => `Đọc các bài học (${d}/${n})`,
+    needExam: `Đạt bài kiểm tra (≥ ${PASS_SCORE}/${EXAM_SIZE})`,
+    toExam: 'Làm bài kiểm tra',
+    name: 'Tên trên chứng chỉ',
+    make: 'Cập nhật',
+    download: 'Tải chứng chỉ (PNG)',
+    making: 'Đang tạo chứng chỉ…',
+    note: 'Chứng chỉ được tạo ngay trên máy của bạn, chỉ để giải trí.',
   },
   en: {
-    title: 'Learn Poker (Texas Hold’em)',
-    tabs: { rankings: 'Hand rankings', flow: 'How a hand works', actions: 'Actions', tips: 'Tips', quiz: 'Practice' },
-    rankIntro: 'Best five of your 2 hole cards + 5 community cards. Strongest first (tap for details):',
-    ranks: {
-      straightFlush: ['Straight flush', 'Five in a row, same suit. A-K-Q-J-10 suited is a Royal Flush.'],
-      quads: ['Four of a kind', 'Four cards of one rank.'],
-      fullHouse: ['Full house', 'Three of a kind plus a pair. The three decide first.'],
-      flush: ['Flush', 'Five cards of one suit, any order. Highest card decides.'],
-      straight: ['Straight', 'Five in a row, mixed suits. Ace can be high (10-J-Q-K-A) or low (A-2-3-4-5).'],
-      trips: ['Three of a kind', 'Three cards of one rank.'],
-      twoPair: ['Two pair', 'Two different pairs. High pair, then low pair, then kicker.'],
-      pair: ['Pair', 'Two cards of one rank. Ties go to the kickers.'],
-      high: ['High card', 'Nothing made: highest card wins.'],
-    },
-    rankNote: 'Suits never break ties in poker: equal hands split the pot.',
-    flow: [
-      ['Blinds', 'The two players left of the Dealer button (D) post forced bets: Small Blind (SB) and Big Blind (BB). The button moves every hand.'],
-      ['Pre-flop', 'Everyone gets 2 face-down cards. The player left of the BB acts first, then clockwise.'],
-      ['Flop', 'Three community cards. A new betting round starts with the first live player left of the button.'],
-      ['Turn', 'The fourth community card, another betting round.'],
-      ['River', 'The fifth community card, the last betting round.'],
-      ['Showdown', 'Remaining players show; the best five-card hand wins. If everyone else folds, the last player wins without showing.'],
-    ],
-    actions: [
-      ['Fold', 'Give up the hand and the chips you already put in.'],
-      ['Check', 'Bet nothing — only when nobody has bet this round.'],
-      ['Call', 'Match the highest bet.'],
-      ['Bet / Raise', 'Put chips in, or increase the bet. A raise must be at least the previous raise (minimum one big blind).'],
-      ['All-in', 'Put in all your chips. With fewer chips than the bet you can only win the matching part (main pot); the rest becomes a side pot for the others.'],
-    ],
-    sideTitle: 'Side pot example',
-    side: 'An goes all-in for 50, Bình and Cúc put in 200 each → main pot 150 (all three can win) and side pot 300 (only Bình and Cúc).',
-    tips: [
-      'Start tight: play big pairs (AA, KK, QQ, JJ), A-K, A-Q; fold most small unconnected hands.',
-      'Position matters: acting later (near the button) gives you more information.',
-      'Don’t call just because you already put chips in — they are no longer yours.',
-      'Read the board: 3–4 cards of one suit or in a row mean someone may hold a flush or straight.',
-      'Tap “?” next to your cards for a quick hand-ranking chart while playing.',
-    ],
-    quizQ: 'Who wins this hand?',
-    quizA: 'Hand A',
-    quizB: 'Hand B',
-    quizTie: 'Tie (split pot)',
-    quizNext: 'Another one',
-    board: 'Board',
+    title: 'Learn the games',
+    games: { xidach: 'Xì dách', tienlen: 'Tiến lên', holdem: "Hold'em" },
+    exam: 'Exam',
+    cert: 'Certificate',
+    close: 'Close',
+    intro: (n, p) => `${n} questions; ${p} or more correct to pass. Questions are generated at random and graded by the game's own rules.`,
+    best: (b) => `Best score: ${b}/${EXAM_SIZE}`,
+    start: 'Start the exam',
+    q: (i, n, k) => `Question ${i}/${n} · ${k} correct`,
     right: 'Correct!',
     wrong: 'Not quite.',
-    score: 'Score',
-    winner: (w) => (w === 'tie' ? 'The hands are equal.' : `Hand ${w.toUpperCase()} wins.`),
-    close: 'Close',
-    funNote: 'For fun only – no real money',
+    next: 'Next question',
+    result: 'See the result',
+    passed: (sc) => `Passed! ${sc}/${EXAM_SIZE} correct.`,
+    failed: (sc) => `Not passed: ${sc}/${EXAM_SIZE}. You need ${PASS_SCORE}.`,
+    retry: 'Try again',
+    getCert: 'Get the certificate 🏅',
+    readAll: 'Open every lesson to receive the certificate.',
+    needTitle: 'To receive this certificate:',
+    needLessons: (d, n) => `Read the lessons (${d}/${n})`,
+    needExam: `Pass the exam (≥ ${PASS_SCORE}/${EXAM_SIZE})`,
+    toExam: 'Take the exam',
+    name: 'Name on the certificate',
+    make: 'Update',
+    download: 'Download certificate (PNG)',
+    making: 'Creating your certificate…',
+    note: 'The certificate is created on your device, just for fun.',
   },
 };
 
-const EXAMPLES = {
-  straightFlush: ['AS', 'KS', 'QS', 'JS', 'TS'],
-  quads: ['9C', '9D', '9H', '9S', 'KD'],
-  fullHouse: ['QH', 'QC', 'QD', '7S', '7H'],
-  flush: ['AD', 'JD', '8D', '6D', '3D'],
-  straight: ['9C', '8D', '7H', '6S', '5C'],
-  trips: ['7C', '7D', '7S', 'KH', '2C'],
-  twoPair: ['JC', 'JD', '4H', '4S', 'AC'],
-  pair: ['TH', 'TC', 'AS', '8D', '4C'],
-  high: ['AH', 'QC', '9D', '6S', '3H'],
-};
+export const learnLang = () => (getLang() === 'en' ? 'en' : 'vi');
+const s = () => S[learnLang()];
 
-const L = () => C[getLang()] || C.vi;
+function renderBlocks(blocks) {
+  return blocks
+    .map((b) => {
+      switch (b.type) {
+        case 'text':
+          return `<p class="small ${b.hideShort ? 'hide-short' : ''}">${esc(b.p)}</p>`;
+        case 'h':
+          return `<h3>${esc(b.p)}</h3>`;
+        case 'steps':
+          return `<ol class="steps">${b.items.map(([h, p]) => `<li><b>${esc(h)}</b><p class="small">${esc(p)}</p></li>`).join('')}</ol>`;
+        case 'defs':
+          return `<dl class="defs">${b.items.map(([h, p]) => `<dt>${esc(h)}</dt><dd class="small">${esc(p)}</dd>`).join('')}</dl>`;
+        case 'tips':
+          return `<ul class="tips">${b.items.map((x) => `<li class="small">${esc(x)}</li>`).join('')}</ul>`;
+        case 'cards':
+          return `<div class="rank-cards">${b.cards.map((c) => cardHtml(c, { size: 'sm' })).join('')}</div>`;
+        case 'ranks':
+          return `<ol class="ranks">${b.items
+            .map(
+              ([name, cards, desc], i) => `<li><details><summary class="rank-head"><span class="rank-no">${i + 1}</span><b>${esc(name)}</b>
+                <span class="rank-cards">${cards.map((c) => cardHtml(c, { size: 'xs' })).join('')}</span></summary>
+                <p class="small muted">${esc(desc)}</p></details></li>`,
+            )
+            .join('')}</ol>`;
+        default:
+          return '';
+      }
+    })
+    .join('');
+}
 
-/** A fresh practice question: board + two hands, with the answer. */
-export function newQuiz(rand = Math.random) {
-  const d = [...DECK];
-  for (let i = d.length - 1; i > 0; i--) {
-    const j = Math.floor(rand() * (i + 1));
-    [d[i], d[j]] = [d[j], d[i]];
+function examBody(app, game) {
+  const x = s();
+  const ex = app.ui.exam?.game === game ? app.ui.exam : null;
+  const prog = app.learnProg[game];
+  if (!ex) {
+    return `<div class="exam-intro">
+      <p>${esc(x.intro(EXAM_SIZE, PASS_SCORE))}</p>
+      <p class="muted small">${esc(x.best(prog.best))}</p>
+      <button class="btn primary block" data-act="examStart">${esc(x.start)}</button></div>`;
   }
-  const a = d.slice(0, 2);
-  const b = d.slice(2, 4);
-  const board = d.slice(4, 9);
-  const ha = bestHand([...a, ...board]);
-  const hb = bestHand([...b, ...board]);
-  const answer = ha.score > hb.score ? 'a' : hb.score > ha.score ? 'b' : 'tie';
-  return { a, b, board, answer, ha: { category: ha.category, cards: ha.cards }, hb: { category: hb.category, cards: hb.cards } };
+  if (ex.i >= ex.qs.length) {
+    const ok = ex.score >= PASS_SCORE;
+    const done = lessonsDone(game, prog, learnLang()) === lessonCount(game, learnLang());
+    return `<div class="exam-result ${ok ? 'pass' : 'fail'}">
+      <div class="big-score">${ex.score}/${EXAM_SIZE}</div>
+      <p><b>${esc(ok ? x.passed(ex.score) : x.failed(ex.score))}</b></p>
+      ${ok && !done ? `<p class="small">${esc(x.readAll)}</p>` : ''}
+      <div class="row centered">
+        <button class="btn" data-act="examStart">${esc(x.retry)}</button>
+        ${ok && done ? `<button class="btn primary" data-act="learnTab" data-v="cert">${esc(x.getCert)}</button>` : ''}
+      </div></div>`;
+  }
+  const q = ex.qs[ex.i];
+  const picked = ex.picked;
+  const hl = picked != null && q.highlight ? new Set(q.highlight) : null;
+  const groups = q.groups.length
+    ? `<div class="q-groups">${q.groups
+        .map(
+          (g) => `<div class="q-group ${g.half ? 'half' : ''}"><div class="small muted">${esc(g.label)}</div>
+            <div class="rank-cards">${g.cards.map((c) => cardHtml(c, { size: 'md', extra: hl?.has(c) ? 'in-best' : '' })).join('')}</div></div>`,
+        )
+        .join('')}</div>`
+    : '';
+  const opts = q.options
+    .map((o) => {
+      const cls = picked == null ? '' : o.v === q.answer ? 'right' : o.v === picked ? 'wrong' : 'dim';
+      return `<button class="btn opt ${cls}" data-act="examPick" data-v="${esc(o.v)}" ${picked != null ? 'disabled' : ''}>${esc(o.label)}</button>`;
+    })
+    .join('');
+  return `<div class="exam">
+    <div class="small muted">${esc(x.q(ex.i + 1, ex.qs.length, ex.score))}</div>
+    <p class="q-prompt"><b>${esc(q.prompt)}</b></p>
+    ${groups}
+    <div class="q-options ${q.options.length > 3 ? 'grid2' : ''}">${opts}</div>
+    ${
+      picked != null
+        ? `<p class="q-explain ${picked === q.answer ? 'up' : 'down'}"><b>${esc(picked === q.answer ? x.right : x.wrong)}</b> ${esc(q.explain)}</p>
+           <button class="btn primary block" data-act="examNext">${esc(ex.i + 1 >= ex.qs.length ? x.result : x.next)}</button>`
+        : ''
+    }</div>`;
+}
+
+function certBody(app, game) {
+  const x = s();
+  const prog = app.learnProg[game];
+  if (!isComplete(game, prog, learnLang())) {
+    const d = lessonsDone(game, prog, learnLang());
+    const n = lessonCount(game, learnLang());
+    return `<div class="cert-need"><p><b>${esc(x.needTitle)}</b></p>
+      <ul class="checklist">
+        <li class="${d === n ? 'ok' : ''}">${d === n ? '✓' : '○'} ${esc(x.needLessons(d, n))}</li>
+        <li class="${prog.best >= PASS_SCORE ? 'ok' : ''}">${prog.best >= PASS_SCORE ? '✓' : '○'} ${esc(x.needExam)} · ${esc(x.best(prog.best))}</li>
+      </ul>
+      <button class="btn primary block" data-act="learnTab" data-v="exam">${esc(x.toExam)}</button></div>`;
+  }
+  const c = app.ui.cert;
+  const ready = c && c.game === game && c.url;
+  return `<div class="cert">
+    <form class="row cert-name" data-submit="certMake">
+      <label for="certName" class="small">${esc(x.name)}</label>
+      <input id="certName" data-keep maxlength="40" value="${esc(c?.game === game ? c.name : app.nick)}">
+      <button class="btn sm" type="submit">${esc(x.make)}</button>
+    </form>
+    ${ready ? `<img class="cert-img" src="${esc(c.url)}" alt="${esc(x.cert)}">` : `<div class="cert-img placeholder">${esc(x.making)}</div>`}
+    <button class="btn primary block" data-act="certDownload" ${ready ? '' : 'disabled'}>${esc(x.download)}</button>
+    <p class="small muted">${esc(x.note)}</p></div>`;
 }
 
 export function learnView(app) {
-  const c = L();
-  const tab = app.ui.learn || 'rankings';
-  const tabs = Object.entries(c.tabs)
-    .map(([k, label]) => `<button role="tab" class="tab ${k === tab ? 'on' : ''}" aria-selected="${k === tab}" data-act="learnTab" data-v="${k}">${esc(label)}</button>`)
-    .join('');
-  let body = '';
-  if (tab === 'rankings') {
-    body = `<p class="small">${esc(c.rankIntro)}</p><ol class="ranks">${[...CATEGORIES]
-      .reverse()
-      .map(
-        (k, i) => `<li><details><summary class="rank-head"><span class="rank-no">${i + 1}</span><b>${esc(c.ranks[k][0])}</b>
-          <span class="rank-cards">${EXAMPLES[k].map((card) => cardHtml(card, { size: 'xs' })).join('')}</span></summary>
-          <p class="small muted">${esc(c.ranks[k][1])}</p></details></li>`,
-      )
-      .join('')}</ol><p class="small">${esc(c.rankNote)}</p>`;
-  } else if (tab === 'flow') {
-    body = `<ol class="steps">${c.flow.map(([h, p]) => `<li><b>${esc(h)}</b><p class="small">${esc(p)}</p></li>`).join('')}</ol>`;
-  } else if (tab === 'actions') {
-    body = `<dl class="defs">${c.actions.map(([h, p]) => `<dt>${esc(h)}</dt><dd class="small">${esc(p)}</dd>`).join('')}</dl>
-      <h3>${esc(c.sideTitle)}</h3><p class="small">${esc(c.side)}</p>`;
-  } else if (tab === 'tips') {
-    body = `<ul class="tips">${c.tips.map((x) => `<li class="small">${esc(x)}</li>`).join('')}</ul>`;
-  } else {
-    const q = (app.ui.quiz ||= newQuiz());
-    const picked = app.ui.quizPick;
-    const handLabel = (h) => esc(c.ranks[h.category][0]);
-    const hand = (key, cards, h) => `<div class="quiz-hand ${picked && q.answer === key ? 'won' : ''}">
-        <div class="small"><b>${key === 'a' ? esc(c.quizA) : esc(c.quizB)}</b>${picked ? ` · ${handLabel(h)}` : ''}</div>
-        <div class="rank-cards">${cards.map((card) => cardHtml(card, { size: 'md', extra: picked && h.cards.includes(card) ? 'in-best' : '' })).join('')}</div></div>`;
-    body = `<p><b>${esc(c.quizQ)}</b> <span class="muted small">${esc(c.score)}: ${app.ui.quizScore || 0}/${app.ui.quizCount || 0}</span></p>
-      <div class="small muted">${esc(c.board)}</div>
-      <div class="rank-cards quiz-board">${q.board.map((card) => cardHtml(card, { size: 'md', extra: picked && (q.ha.cards.includes(card) || q.hb.cards.includes(card)) ? 'in-best' : '' })).join('')}</div>
-      <div class="quiz-hands">${hand('a', q.a, q.ha)}${hand('b', q.b, q.hb)}</div>
-      ${
-        picked
-          ? `<p class="quiz-result ${picked === q.answer ? 'up' : 'down'}"><b>${esc(picked === q.answer ? c.right : c.wrong)}</b> ${esc(c.winner(q.answer))}</p>
-             <button class="btn primary block" data-act="quizNext">${esc(c.quizNext)}</button>`
-          : `<div class="row quiz-choices">
-               <button class="btn grow" data-act="quizPick" data-v="a">${esc(c.quizA)}</button>
-               <button class="btn grow" data-act="quizPick" data-v="tie">${esc(c.quizTie)}</button>
-               <button class="btn grow" data-act="quizPick" data-v="b">${esc(c.quizB)}</button>
-             </div>`
-      }`;
-  }
+  const x = s();
+  const L = app.ui.learn;
+  const game = L.game;
+  const course = COURSES[game];
+  const lessons = course.lessons(learnLang());
+  const prog = app.learnProg[game];
+  const tab = L.tab;
+  const chips = COURSE_IDS.map((id) => {
+    const mark = isComplete(id, app.learnProg[id], learnLang()) ? ' 🏅' : '';
+    return `<button class="chip-btn ${id === game ? 'on' : ''}" data-act="learnGame" data-v="${id}">${esc(x.games[id])}${mark}</button>`;
+  }).join('');
+  const tabs = [
+    ...lessons.map(
+      (l) =>
+        `<button role="tab" class="tab ${l.id === tab ? 'on' : ''}" aria-selected="${l.id === tab}" data-act="learnTab" data-v="${l.id}">${prog.seen.includes(l.id) ? '✓ ' : ''}${esc(l.title)}</button>`,
+    ),
+    `<button role="tab" class="tab ${tab === 'exam' ? 'on' : ''}" aria-selected="${tab === 'exam'}" data-act="learnTab" data-v="exam">${esc(x.exam)}${prog.best >= PASS_SCORE ? ' ✓' : ''}</button>`,
+    `<button role="tab" class="tab ${tab === 'cert' ? 'on' : ''}" aria-selected="${tab === 'cert'}" data-act="learnTab" data-v="cert">${isComplete(game, prog, learnLang()) ? '🏅 ' : '🔒 '}${esc(x.cert)}</button>`,
+  ].join('');
+  const lesson = lessons.find((l) => l.id === tab);
+  const body = lesson ? renderBlocks(lesson.blocks) : tab === 'exam' ? examBody(app, game) : certBody(app, game);
   return `<div class="overlay learn-overlay" data-ov="learn" data-act="learnClose">
-    <div class="sheet learn" role="dialog" aria-modal="true" aria-label="${esc(c.title)}" data-stop>
-      <div class="learn-head"><h2>${esc(c.title)}</h2><button class="btn ghost icon" data-act="learnClose" aria-label="${esc(c.close)}">✕</button></div>
+    <div class="sheet learn" role="dialog" aria-modal="true" aria-label="${esc(x.title)}" data-stop>
+      <div class="learn-head"><h2>🎓 ${esc(course.title(learnLang()))}</h2><button class="btn ghost icon" data-act="learnClose" aria-label="${esc(x.close)}">✕</button></div>
+      <div class="course-chips">${chips}</div>
       <nav class="tabs" role="tablist">${tabs}</nav>
       <div class="learn-body">${body}</div>
-      <p class="note">${esc(c.funNote)}</p>
     </div></div>`;
 }
