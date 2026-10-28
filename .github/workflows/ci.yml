@@ -64,5 +64,19 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           wranglerVersion: "4"
       # Post-deploy check on production; results appear as annotations in the run summary.
-      - name: Production smoke test
-        run: node scripts/remote-smoke.mjs "${{ steps.deploy.outputs.deployment-url }}"
+      - name: Production smoke test (with live logs)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          WRANGLER_SEND_METRICS: "false"
+        run: |
+          npx wrangler tail --format json > tail.log 2> tail.err &
+          TAIL=$!
+          sleep 8
+          set +e
+          node scripts/remote-smoke.mjs "${{ steps.deploy.outputs.deployment-url }}"
+          CODE=$?
+          sleep 5
+          kill $TAIL 2>/dev/null
+          node scripts/tail-report.mjs tail.log
+          exit $CODE
