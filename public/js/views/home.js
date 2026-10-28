@@ -65,6 +65,7 @@ export function homeView(app) {
       <form class="join" data-submit="joinCode">
         <input id="joinCode" data-keep class="code-input" maxlength="12" autocapitalize="characters" autocomplete="off"
                spellcheck="false" placeholder="${esc(t('codePh'))}" aria-label="${esc(t('codePh'))}">
+        <button class="btn icon random-btn" type="button" data-act="joinRandom" title="${esc(t('randomJoin'))}" aria-label="${esc(t('randomJoin'))}" ${app.busy ? 'disabled' : ''}>🎲</button>
         <button class="btn" type="submit">${esc(t('join'))}</button>
       </form>
       ${h.error ? `<p class="error" role="alert">${esc(h.error)}</p>` : ''}
@@ -106,6 +107,7 @@ export function rulesFields(app) {
   const h = app.home;
   return `<label class="field"><span>${esc(t('startChips'))}</span><input id="o-startChips" data-keep type="number" inputmode="numeric" min="100" max="1000000" step="100" value="1000"></label>
     <label class="field"><span>${esc(t('turnSeconds'))}</span><input id="o-turnSeconds" data-keep type="number" inputmode="numeric" min="10" max="120" value="30"></label>
+    <label class="check"><input id="o-public" data-keep type="checkbox"> 🌐 ${esc(t('publicOpt'))}</label>
     ${GAME_VIEWS[h.game].options(null, 'o-')}`;
 }
 

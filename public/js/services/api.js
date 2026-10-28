@@ -14,5 +14,6 @@ async function call(method, path, body) {
 export const api = {
   createTable: (secret, game, options) => call('POST', '/api/tables', { secret, game, options }),
   tableInfo: (code) => call('GET', `/api/tables/${encodeURIComponent(code)}`),
+  randomTable: (game) => call('GET', `/api/random${game ? `?game=${encodeURIComponent(game)}` : ''}`),
   deleteTable: (code, secret) => call('DELETE', `/api/tables/${encodeURIComponent(code)}`, { secret }),
 };

@@ -20,6 +20,7 @@ export function tableView(app) {
     <header class="tbar">
       <button class="btn ghost icon" data-act="home" aria-label="${esc(t('back'))}">‹</button>
       <button class="code-chip" data-act="invite" aria-label="${esc(t('invite'))}">${esc(tb.code)}</button>
+      ${s?.opts?.public ? `<span class="pub-chip" title="${esc(t('publicOn'))}">🌐</span>` : ''}
       ${tb.status !== 'open' ? `<span class="conn">${esc(t('reconnecting'))}</span>` : '<span class="grow-sp"></span>'}
       <button class="btn sm" data-act="invite">${esc(t('invite'))}</button>
       <button class="btn ghost icon" data-act="settingsOpen" data-v="table" aria-label="${esc(t('settings'))}" title="${esc(t('settings'))}">⚙</button>
@@ -42,7 +43,6 @@ export function tableView(app) {
       <button class="scrim" data-act="drawer" aria-label="${esc(t('close'))}" tabindex="-1"></button>
     </div>
     ${app.ui.invite ? inviteHtml(app) : ''}
-    ${app.toast ? `<div class="toast" role="status">${esc(app.toast.text)}</div>` : ''}
   </div>`;
 }
 
@@ -183,6 +183,7 @@ function settingsTab(app, gv) {
     </div>`;
   if (!s.you.isHost) return personal;
   return `${personal}
+    <button class="btn sm ${s.opts.public ? 'primary' : ''}" data-act="togglePublic" aria-pressed="${!!s.opts.public}">🌐 ${esc(t('publicOpt'))}: ${esc(s.opts.public ? t('on') : t('off'))}</button>
     <h3>${esc(t('tableSettings'))}</h3>
     <form id="settingsForm" class="opt-grid" data-submit="saveSettings">
       <label class="field"><span>${esc(t('turnSeconds'))}</span><input id="s-turnSeconds" data-keep type="number" min="10" max="120" value="${s.opts.turnSeconds}"></label>

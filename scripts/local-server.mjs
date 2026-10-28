@@ -334,10 +334,11 @@ function attachSocket(sock, serverEnd, instance, state) {
 // ---------- Server ----------
 export async function startServer({ port = 8787, host = '127.0.0.1', quiet = false, env: extraEnv = {} } = {}) {
   const worker = (await import(pathToFileURL(path.join(ROOT, 'src/worker.js')).href)).default;
-  const { TableDO, HostDO } = await import(pathToFileURL(path.join(ROOT, 'src/worker.js')).href);
+  const { TableDO, HostDO, LobbyDO } = await import(pathToFileURL(path.join(ROOT, 'src/worker.js')).href);
   const env = { ALLOWED_ORIGINS: '', ...extraEnv };
   env.TABLE = new EmuNamespace(TableDO, env);
   env.HOST = new EmuNamespace(HostDO, env);
+  env.LOBBY = new EmuNamespace(LobbyDO, env);
   env.ASSETS = makeAssets(await parseHeadersFile());
 
   const toRequest = async (req, base) => {
@@ -399,7 +400,7 @@ export async function startServer({ port = 8787, host = '127.0.0.1', quiet = fal
   if (!quiet) console.log(`Sòng Nhà local server on http://${host}:${actual}`);
 
   const allStorages = () =>
-    [env.TABLE, env.HOST].flatMap((ns) => [...ns.objects.values()].map((e) => e.state.storage));
+    [env.TABLE, env.HOST, env.LOBBY].flatMap((ns) => [...ns.objects.values()].map((e) => e.state.storage));
   return {
     port: actual,
     url: `http://${host}:${actual}`,

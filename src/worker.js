@@ -2,13 +2,14 @@
 // Static assets are served by Workers Static Assets; only /api/* and /ws/* run this code first.
 import { TableDO } from './table/TableDO.js';
 import { HostDO } from './table/HostDO.js';
+import { LobbyDO } from './table/lobby.js';
 import { hostKeyFor } from './table/core.js';
 import { json, readJson, originAllowed } from './lib/http.js';
 import { CODE_RE, normalizeCode, isSecret } from './lib/protocol.js';
 import { isGame } from './games/index.js';
 import { randomInt } from '../public/js/domain/shuffle.js';
 
-export { TableDO, HostDO };
+export { TableDO, HostDO, LobbyDO };
 
 const WORDS = [
   'BIEN', 'CAU', 'CHE', 'DUA', 'GIO', 'HEO', 'LUA', 'MAI', 'MEO', 'MIT', 'MUA', 'NANG', 'NUI', 'PHO', 'RONG',
@@ -54,6 +55,13 @@ export default {
       if (request.headers.get('Upgrade') !== 'websocket') return json({ error: 'expected_websocket' }, 426);
       if (!originAllowed(request, env)) return json({ error: 'bad_origin' }, 403);
       return tableStub(env, code).fetch(new Request('https://table/ws', request));
+    }
+
+    if (path === '/api/random' && request.method === 'GET') {
+      // A random public table (optionally of one game). Only tables whose host allowed it are listed.
+      const game = url.searchParams.get('game');
+      const q = isGame(game) ? `?game=${game}` : '';
+      return env.LOBBY.get(env.LOBBY.idFromName('lobby')).fetch(`https://lobby/pick${q}`);
     }
 
     if (path === '/api/tables' && request.method === 'POST') {

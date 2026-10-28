@@ -66,10 +66,36 @@ export class TableDO {
     return set;
   }
 
+  /**
+   * Keeps the lobby in sync. Only sends when something the lobby cares about changed
+   * (public flag, seats taken, humans online), so it costs almost nothing.
+   */
+  syncLobby(connected) {
+    const t = this.t;
+    if (!t || !this.env.LOBBY) return;
+    const taken = t.seats.filter(Boolean).length;
+    const online = t.seats.filter((s) => s && !s.bot && connected.has(s.pid)).length;
+    const pub = !!t.opts.public;
+    const key = pub ? `1|${t.game}|${t.seats.length}|${taken}|${online}` : '0';
+    const prev = this.lobbyKey;
+    if (key === prev) return;
+    this.lobbyKey = key;
+    // A private table only needs a "remove" when it was public a moment ago.
+    if (!pub && !(prev && prev !== '0')) return;
+    const stub = this.env.LOBBY.get(this.env.LOBBY.idFromName('lobby'));
+    const body = pub
+      ? { code: t.code, game: t.game, seats: t.seats.length, taken, online }
+      : { code: t.code };
+    stub
+      .fetch(`https://lobby/${pub ? 'upsert' : 'remove'}`, { method: 'POST', body: JSON.stringify(body) })
+      .catch((e) => console.error('lobby sync failed', e));
+  }
+
   broadcast() {
     if (!this.t) return;
     const now = Date.now();
     const connected = this.connectedPids();
+    this.syncLobby(connected);
     for (const ws of this.sockets()) {
       const a = safeAttachment(ws);
       if (!a.pid) continue;
@@ -209,6 +235,16 @@ export class TableDO {
 
   async destroy() {
     const t = this.t;
+    if (t && this.env.LOBBY) {
+      try {
+        await this.env.LOBBY.get(this.env.LOBBY.idFromName('lobby')).fetch('https://lobby/remove', {
+          method: 'POST',
+          body: JSON.stringify({ code: t.code }),
+        });
+      } catch (e) {
+        console.error('lobby remove failed', e);
+      }
+    }
     if (t) {
       try {
         const host = this.env.HOST.get(this.env.HOST.idFromName(`host:${t.hostKey}`));

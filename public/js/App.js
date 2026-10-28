@@ -1,6 +1,7 @@
 // Sòng Nhà client. Views are (app) => HTML strings; every user string goes through esc();
 // UI events are delegated: [data-act] → App.actions[name], [data-submit] forms, [data-input] fields.
 import { load, save } from './lib/store.js';
+import { esc } from './lib/esc.js';
 import { t, setLang, errText } from './lib/i18n.js';
 import { toCsv } from './lib/csv.js';
 import { verifyCommitment } from './domain/shuffle.js';
@@ -71,7 +72,8 @@ function render() {
     (app.ui.rules && app.route.name !== 'table' ? rulesView(app) : '') +
     (app.ui.settings ? settingsView(app) : '') +
     (app.ui.askName ? askNameView(app) : '') +
-    (app.ui.learn ? learnView(app) : '');
+    (app.ui.learn ? learnView(app) : '') +
+    (app.toast ? `<div class="toast" role="status">${esc(app.toast.text)}</div>` : '');
   for (const o of root.querySelectorAll('.overlay[data-ov]')) if (shownOverlays.has(o.dataset.ov)) o.classList.add('steady');
   const cf = document.getElementById('createForm');
   applyDraft(cf);
@@ -365,6 +367,7 @@ function readCreateOptions() {
   return {
     startChips: num('o-startChips', 1000),
     turnSeconds: num('o-turnSeconds', 30),
+    public: !!form.querySelector('#o-public')?.checked,
     game: GAME_VIEWS[app.home.game].readOptions(form, 'o-'),
   };
 }
@@ -444,6 +447,24 @@ export const actions = {
     }
     rememberTable(r.data.code, { game: app.home.game, host: true });
     go(`/t/${r.data.code}`);
+  },
+  async joinRandom() {
+    if (app.busy) return;
+    app.busy = true;
+    render();
+    // Prefer the selected game, then any game.
+    let r = await api.randomTable(app.home.game).catch(() => ({ ok: false }));
+    if (!r.ok) r = await api.randomTable().catch(() => ({ ok: false }));
+    app.busy = false;
+    if (!r.ok || !r.data?.code) {
+      render();
+      return toast(t('randomNone'));
+    }
+    go(`/t/${r.data.code}`);
+  },
+  togglePublic: () => {
+    const on = !app.table?.state?.opts?.public;
+    send({ t: 'setPublic', on });
   },
   joinCode: () => {
     const raw = (document.getElementById('joinCode')?.value || '').trim().toUpperCase().replace(/\s+/g, '');

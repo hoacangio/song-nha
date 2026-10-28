@@ -12,6 +12,7 @@ no cash-out, no prizes, no ads). Create a private table, share the link or QR co
 ## Features
 
 - Private tables with codes like `SEN-123`, invite dialog with QR code (dependency-free encoder) and full screen.
+- Optional public tables: the host may let strangers join via “🎲 random table”.
 - Bots for empty seats (host adds/removes them) — handy for testing and for two-person games.
 - Server-authoritative rules, dealing, timers and payouts; per-player views (no one ever receives
   another player's hidden cards); commit–reveal fairness proof for every hand.
@@ -84,6 +85,7 @@ WebSocket at `/ws/<CODE>`. Client → server messages are JSON objects with a `t
 | `addBot` / `removeBot` / `kick` | `seat` | host | |
 | `rebuy` | `amount` | host | adds chips to every seated player (counted as buy-in) |
 | `settings` | `options` | host | between hands only; sanitised |
+| `setPublic` | `on` | host | allow strangers to be sent here by “random table” (any time, also mid-hand) |
 | `history` | | anyone | replies `history {items}` |
 | `deleteTable` | | host | |
 | `ping` | | anyone | replies `pong {now}` (processed in order — used by tests) |
@@ -92,7 +94,17 @@ The plain-text frame `hb` is answered with `hb!` by the runtime auto-response (n
 Server → client: `state` (per-viewer snapshot), `welcome`, `history`, `err {code}`, `deleted`, `pong`.
 
 HTTP: `POST /api/tables {secret, game, options}` → `{code}` · `GET /api/tables/:code` → info ·
-`DELETE /api/tables/:code {secret}` (host only).
+`DELETE /api/tables/:code {secret}` (host only) · `GET /api/random[?game=]` → `{code, game}` of a random
+public table (404 when none).
+
+### Random table (public lobby)
+
+A table is offered to strangers only when its host turns on **“Cho người lạ vào ngẫu nhiên”** (off by
+default; at creation in Options → General, or any time in ☰ → Settings). A single `LobbyDO` keeps
+`{code, game, seats, taken, online}` for public tables — no names, chips or cards. Each table pushes an
+update only when one of those values changes (and removes itself when made private or deleted). “🎲” on
+the home page picks, at random weighted by people online, a public table of the selected game that has a
+free seat and at least one human online, falling back to any game.
 
 ## Rules — Xì dách (defaults; all are host options)
 

@@ -17,6 +17,7 @@ src/worker.js              HTTP API + WS routing (only /api/* and /ws/* run the 
 src/table/TableDO.js       per-table actor: queue, storage, sockets, alarm, rate limit
 src/table/core.js          plain-data table logic (seats, ledger, hands, timers, snapshots)
 src/table/HostDO.js        per-host table limit (5)
+src/table/lobby.js         LobbyDO: public tables for “random table” (code/game/seats/taken/online only)
 src/games/<game>/engine.js game engine (common interface — see README)
 src/lib/protocol.js        message whitelist, validation, nick cleaning, token bucket
 public/js/domain/          pure rules shared with the client (cards, shuffle, xidach, tienlen, holdem, fengshui)
@@ -85,4 +86,5 @@ See the table in README → *Security model*. Key invariants with tests:
 - Step 2 (Tiến lên miền Nam: combos, chặt heo toggles, tới trắng, scoring table): done.
 - Step 3 (Texas Hold'em: 7-card evaluator, side pots, odd chip, short all-in rule, run-out, beginner guide): done.
 - Courses for every game with generated exams and PNG certificates: done (tests/unit/courses, tests/ui/learn).
+- Random table for public tables (host opt-in, LobbyDO): done.
 - Commit `package-lock.json` once dependencies are installed with network access, then switch CI to `npm ci`.

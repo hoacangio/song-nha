@@ -22,6 +22,7 @@ export const CLIENT_MESSAGES = Object.freeze({
   removeBot: ['seat'],
   rebuy: ['amount'],
   settings: ['options'],
+  setPublic: ['on'],
   history: [],
   kick: ['seat'],
   deleteTable: [],

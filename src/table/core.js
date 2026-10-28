@@ -22,6 +22,8 @@ export function sanitizeTableOptions(gameId, raw = {}) {
     turnSeconds: clampInt(r.turnSeconds, 10, 120, 30),
     startChips: clampInt(r.startChips, 100, 1_000_000, 1000),
     seats: clampInt(r.seats, g.meta.minSeats, g.meta.maxSeats, g.meta.maxSeats),
+    // Host allows strangers to be sent here by "random table" (off unless the host turns it on).
+    public: r.public === true,
     game: g.sanitizeOptions(r.game && typeof r.game === 'object' ? r.game : {}),
   };
 }
@@ -198,9 +200,16 @@ export async function handle(t, actor, msg, now) {
         turnSeconds: msg.options.turnSeconds ?? t.opts.turnSeconds,
         startChips: msg.options.startChips ?? t.opts.startChips,
         seats: t.opts.seats,
+        public: t.opts.public,
         game: { ...t.opts.game, ...(msg.options.game && typeof msg.options.game === 'object' ? msg.options.game : {}) },
       };
       t.opts = sanitizeTableOptions(t.game, merged);
+      break;
+    }
+    case 'setPublic': {
+      if (!actor.isHost) err('host_only');
+      if (typeof msg.on !== 'boolean') err('bad_options');
+      t.opts = { ...t.opts, public: msg.on };
       break;
     }
     case 'history':

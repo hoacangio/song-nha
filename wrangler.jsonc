@@ -12,11 +12,13 @@
   "durable_objects": {
     "bindings": [
       { "name": "TABLE", "class_name": "TableDO" },
-      { "name": "HOST", "class_name": "HostDO" }
+      { "name": "HOST", "class_name": "HostDO" },
+      { "name": "LOBBY", "class_name": "LobbyDO" }
     ]
   },
   "migrations": [
-    { "tag": "v1", "new_sqlite_classes": ["TableDO", "HostDO"] }
+    { "tag": "v1", "new_sqlite_classes": ["TableDO", "HostDO"] },
+    { "tag": "v2", "new_sqlite_classes": ["LobbyDO"] }
   ],
   "vars": {
     // Extra allowed WebSocket origins, comma separated (same-origin is always allowed).
