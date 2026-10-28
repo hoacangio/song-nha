@@ -29,7 +29,7 @@ export function xidachOptionsForm(o, p = 'o-') {
         <option value="classic" ${sel('classic', d.aceRule)}>${esc(t('aceClassic'))}</option>
       </select></label>
     <label class="check"><input id="${p}bothBustPush" data-keep name="g.bothBustPush" type="checkbox" ${d.bothBustPush ? 'checked' : ''}> ${esc(t('bothBustPush'))}</label>
-    <fieldset class="payouts"><legend>${esc(t('payouts'))}</legend>
+    <fieldset class="payouts" data-g="payouts"><legend>${esc(t('payouts'))}</legend>
       ${['normal', 'xidach', 'xibang', 'ngulinh']
         .map(
           (k) =>

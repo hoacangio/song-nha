@@ -7,7 +7,7 @@ no cash-out, no prizes, no ads). Create a private table, share the link or QR co
 | --- | --- | --- |
 | Xì dách (Vietnamese blackjack) | ✅ playable | 2–8 |
 | Tiến lên miền Nam | ✅ playable | 2–4 |
-| Texas Hold'em (No-Limit) | ⏳ next | 2–9 |
+| Texas Hold'em (No-Limit) | ✅ playable (+ beginner guide) | 2–9 |
 
 ## Features
 
@@ -21,7 +21,9 @@ no cash-out, no prizes, no ads). Create a private table, share the link or QR co
   (formula-safe).
 - Mobile-first: the table fits one screen without scrolling on 390×844, 375×667, 360×640 and desktop.
   Sidebar on ≥1024 px, drawer below.
-- Dark theme by default, light theme option, six warm accent colours; Vietnamese/English.
+- Dark theme by default, light option; casino table themes (Las Vegas, Macau, Phú Quốc, Cambodia);
+  Ngũ hành accent palette with mệnh by birth year; synthesised sound effects (off by default); Vietnamese/English.
+- Pages and sheets never need page scrolling (home, settings, rules options, learn guide) on 360×640 → 2560×1400.
 - App-like motion (deal, flip, chip, result pop) that survives re-renders; honours `prefers-reduced-motion`.
   Haptics on your turn; sounds off by default.
 - PWA (manifest, network-first service worker, install prompt), strict CSP.
@@ -77,6 +79,8 @@ WebSocket at `/ws/<CODE>`. Client → server messages are JSON objects with a `t
 | `xet` / `xetAll` | `seat` | dealer | only once the dealer has ≥ `dealerMin` |
 | `play` | `cards` | player | Tiến lên: 1–13 distinct card ids from your hand forming a combo that beats the table |
 | `pass` | | player | Tiến lên: not allowed when you lead the round |
+| `fold` / `check` / `call` / `allin` | | player | Hold'em |
+| `raise` | `amount` | player | Hold'em: total to raise *to*; ≥ current bet + last raise unless all-in |
 | `addBot` / `removeBot` / `kick` | `seat` | host | |
 | `rebuy` | `amount` | host | adds chips to every seated player (counted as buy-in) |
 | `settings` | `options` | host | between hands only; sanitised |
@@ -122,6 +126,22 @@ HTTP: `POST /api/tables {secret, game, options}` → `{code}` · `GET /api/table
 | End of game | The first player to empty their hand wins; every other player pays: 1 point per card left (cóng — never played a card — pays 26 instead), plus thối: black 2 = 5, red 2 = 10 each, tứ quý = 10, 3 đôi thông = 5 |
 | Points → chips | points × `unit` (default 10 chips); losses are capped at the player's stack |
 | Timer | Timeout: the leader auto-plays the cheapest lead (incl. the required card); others auto-pass |
+
+## Rules — Texas Hold'em No-Limit (defaults; all are host options)
+
+| Rule | Default |
+| --- | --- |
+| Blinds / ante | Small blind 5, big blind 10, ante 0 |
+| Button | Rotates clockwise each hand. Heads-up: the button posts the small blind, acts first pre-flop and last after the flop |
+| Streets | Pre-flop (first to act: left of the BB) → flop (3) → turn → river, one burn card before each; post-flop the first live player left of the button acts first |
+| Actions | Fold, check, call, bet/raise (*raise to*), all-in. Minimum raise = size of the last full raise (at least 1 BB) |
+| Short all-in | An all-in raise smaller than a full raise does not reopen raising for players who already acted (they may only call or fold) |
+| Side pots | Built from each player's total contribution; folded chips stay in the pot; an uncalled excess returns to its owner |
+| Showdown | Best five of seven cards (tested evaluator: all 2,598,960 five-card hands, 7,462 distinct ranks); ties split, odd chips go to the first winners left of the button |
+| All-in run-out | When nobody can bet any more, live hands are shown and the board is dealt street by street (1.4 s apart) |
+| Fold-out | The last player wins without showing |
+| Timer | Timeout: check if possible, otherwise fold |
+| Beginner guide | "Học luật Poker": hand rankings with examples, how a hand works, actions & side pots, tips, and a practice quiz (who wins?) |
 
 ## Development
 

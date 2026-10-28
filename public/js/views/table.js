@@ -1,7 +1,6 @@
 import { esc, fmt, signed } from '../lib/esc.js';
 import { t } from '../lib/i18n.js';
 import { qrSvg } from '../lib/qr.js';
-import { lookPanel } from '../ui/accent.js';
 import { cardHtml, ringHtml, initials } from '../ui/cards.js';
 import { GAME_VIEWS } from './games.js';
 
@@ -23,6 +22,7 @@ export function tableView(app) {
       <button class="code-chip" data-act="invite" aria-label="${esc(t('invite'))}">${esc(tb.code)}</button>
       ${tb.status !== 'open' ? `<span class="conn">${esc(t('reconnecting'))}</span>` : '<span class="grow-sp"></span>'}
       <button class="btn sm" data-act="invite">${esc(t('invite'))}</button>
+      <button class="btn ghost icon" data-act="settingsOpen" data-v="table" aria-label="${esc(t('settings'))}" title="${esc(t('settings'))}">⚙</button>
       <button class="btn ghost icon menu-btn" data-act="drawer" aria-label="${esc(t('menu'))}" aria-expanded="${!!app.ui.drawer}">☰</button>
     </header>`;
   if (!s) return `<div class="screen">${head}<main class="felt-wrap"><div class="felt"><div class="center"><div class="center-msg">…</div></div></div></main></div>`;
@@ -146,9 +146,10 @@ function historyTab(app) {
       .slice(0, 30)
       .map(
         (it) => `<li><div class="hist-h">${esc(t('hand'))} #${it.n} · ${esc(new Date(it.at).toLocaleTimeString())}</div>
+        ${it.game === 'holdem' && it.rows[0]?.board?.length ? `<div class="hist-board">${it.rows[0].board.map((c) => cardHtml(c, { size: 'xs' })).join('')}</div>` : ''}
         ${it.rows
           .map(
-            (r) => `<div class="hist-r"><span>${r.role === 'dealer' ? `<b>${esc(t('dealer'))}</b> ` : r.role === 'winner' ? `<b>${esc(t('tl_first'))}</b> ` : ''}${esc(r.nick)}</span>
+            (r) => `<div class="hist-r"><span>${r.role === 'dealer' ? `<b>${esc(t('dealer'))}</b> ` : r.role === 'winner' ? `<b>${esc(it.game === 'tienlen' ? t('tl_first') : t('win'))}</b> ` : ''}${esc(r.nick)}</span>
             <span class="hist-cards">${r.cards.map((c) => cardHtml(c, { size: 'xs' })).join('')}</span>
             <span class="muted">${esc((GAME_VIEWS[it.game] || GAME_VIEWS.xidach).kindLabel({ kind: r.kind, total: r.total }))}</span>
             <span class="num ${r.delta > 0 ? 'up' : r.delta < 0 ? 'down' : ''}">${esc(signed(r.delta))}</span></div>`,
@@ -176,9 +177,9 @@ function fairnessTab(app) {
 function settingsTab(app, gv) {
   const s = app.table.state;
   const personal = `
-    ${lookPanel(app)}
     <div class="row">
-      <button class="btn sm" data-act="setLang" data-v="${app.lang === 'vi' ? 'en' : 'vi'}">${app.lang === 'vi' ? 'English' : 'Tiếng Việt'}</button>
+      <button class="btn sm" data-act="settingsOpen" data-v="table">⚙ ${esc(t('look'))}</button>
+      ${s.game === 'holdem' ? `<button class="btn sm" data-act="learnOpen" data-v="rankings">🎓 ${esc(t('learn_open'))}</button>` : ''}
     </div>`;
   if (!s.you.isHost) return personal;
   return `${personal}

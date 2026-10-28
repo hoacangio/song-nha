@@ -7,11 +7,14 @@ import { verifyCommitment } from './domain/shuffle.js';
 import { deviceSecret } from './services/identity.js';
 import { api } from './services/api.js';
 import { TableSocket } from './services/socket.js';
-import { homeView } from './views/home.js';
+import { homeView, rulesView, rulesFields } from './views/home.js';
+import { settingsView } from './ui/accent.js';
+import { learnView, newQuiz } from './views/learn.js';
 import { tableView, tableUrl } from './views/table.js';
 import { clampBet } from './views/xidach.js';
 import { GAME_VIEWS } from './views/games.js';
 import { selectionState } from './views/tienlen.js';
+import { clampRaise } from './views/holdem.js';
 import { suggestPlay, sortCards } from './domain/tienlen.js';
 import { forgetMotion } from './lib/motion.js';
 import { ACCENTS, normalizeAccent, isBirthYear, suggestedAccent, menhOf } from './domain/fengshui.js';
@@ -57,7 +60,20 @@ function render() {
   });
   const openDetails = [...root.querySelectorAll('details[open]')].map((d) => d.className);
 
-  root.innerHTML = app.route.name === 'table' && app.table ? tableView(app) : homeView(app);
+  root.innerHTML =
+    (app.route.name === 'table' && app.table ? tableView(app) : homeView(app)) +
+    (app.ui.rules && app.route.name !== 'table' ? rulesView(app) : '') +
+    (app.ui.settings ? settingsView(app) : '') +
+    (app.ui.learn ? learnView(app) : '');
+  const cf = document.getElementById('createForm');
+  applyDraft(cf);
+  // Rules sheet tabs: show only the active group (all fields stay in the DOM for drafts).
+  if (cf?.dataset.tab) {
+    for (const el of cf.children) {
+      const g = el.dataset.g || 'general';
+      el.hidden = cf.querySelector('fieldset[data-g]') ? g !== cf.dataset.tab : false;
+    }
+  }
 
   for (const [id, v] of Object.entries(kept)) {
     const el = document.getElementById(id);
@@ -209,6 +225,7 @@ function onSocketMessage(m) {
         if (navigator.userActivation?.hasBeenActive ?? true) navigator.vibrate?.(60);
       } catch {}
     }
+    if (!m.hand?.actions?.raise) app.ui.raising = false;
     if (app.ui.sel?.size) {
       const mine = m.hand?.seats?.[m.you.seat]?.cards || [];
       for (const c of [...app.ui.sel]) if (!mine.includes(c)) app.ui.sel.delete(c);
@@ -245,16 +262,32 @@ function requestHistory() {
 const send = (obj) => app.table?.sock?.send(obj);
 
 // ---------- actions ----------
+/** Rule options typed in the options sheet, kept per game while the sheet is closed. */
+const draftOf = () => ((app.home.draft ||= {})[app.home.game] ||= {});
+
+function applyDraft(form) {
+  if (!form) return;
+  for (const [id, v] of Object.entries(draftOf())) {
+    const el = form.querySelector(`#${CSS.escape(id)}`);
+    if (!el) continue;
+    if (el.type === 'checkbox') el.checked = !!v;
+    else el.value = v;
+  }
+}
+
 function readCreateOptions() {
-  const form = document.getElementById('createForm');
+  // Build the fields off-screen, apply the draft, and read them with the game's own reader.
+  const form = document.createElement('form');
+  form.innerHTML = rulesFields(app);
+  applyDraft(form);
   const num = (id, d) => {
-    const v = Number(document.getElementById(id)?.value);
+    const v = Number(form.querySelector(`#${id}`)?.value);
     return Number.isFinite(v) ? Math.round(v) : d;
   };
   return {
     startChips: num('o-startChips', 1000),
     turnSeconds: num('o-turnSeconds', 30),
-    game: form ? GAME_VIEWS[app.home.game].readOptions(form, 'o-') : {},
+    game: GAME_VIEWS[app.home.game].readOptions(form, 'o-'),
   };
 }
 
@@ -389,6 +422,92 @@ export const actions = {
     app.ui.bet = clampBet(cur + Number(d.v) * b.min, b);
     render();
   },
+  // Hold'em
+  hdFold: () => send({ t: 'fold' }),
+  hdCheck: () => send({ t: 'check' }),
+  hdCall: () => send({ t: 'call' }),
+  hdAllin: () => send({ t: 'allin' }),
+  raiseOpen: () => {
+    app.ui.raising = true;
+    app.ui.raise = null;
+    render();
+  },
+  raiseCancel: () => {
+    app.ui.raising = false;
+    render();
+  },
+  raisePreset: (d) => {
+    app.ui.raise = Number(d.v);
+    render();
+  },
+  raiseConfirm: () => {
+    const a = app.table?.state?.hand?.actions;
+    if (!a?.raise) return;
+    const v = clampRaise(app.ui.raise ?? a.raise.min, a);
+    app.ui.raising = false;
+    send(v >= a.raise.max ? { t: 'allin' } : { t: 'raise', amount: v });
+  },
+  settingsOpen: (d) => {
+    app.ui.settings = d.v || 'table';
+    app.ui.drawer = false;
+    render();
+  },
+  settingsClose: () => {
+    app.ui.settings = null;
+    render();
+  },
+  rulesTab: (d) => {
+    app.ui.rulesTab = d.v;
+    render();
+  },
+  rulesOpen: () => {
+    app.ui.rules = true;
+    app.ui.rulesTab = 'general';
+    render();
+  },
+  rulesClose: () => {
+    app.ui.rules = false;
+    render();
+  },
+  rulesReset: () => {
+    if (app.home.draft) app.home.draft[app.home.game] = {};
+    app.ui.rules = false;
+    render();
+    app.ui.rules = true;
+    render();
+  },
+  learnOpen: (d) => {
+    app.ui.learn = d.v || 'rankings';
+    app.ui.drawer = false;
+    render();
+  },
+  learnTab: (d) => {
+    app.ui.learn = d.v;
+    render();
+  },
+  learnClose: () => {
+    app.ui.learn = null;
+    render();
+  },
+  quizPick: (d) => {
+    if (app.ui.quizPick || !app.ui.quiz) return;
+    app.ui.quizPick = d.v;
+    app.ui.quizCount = (app.ui.quizCount || 0) + 1;
+    if (d.v === app.ui.quiz.answer) {
+      app.ui.quizScore = (app.ui.quizScore || 0) + 1;
+      sfx('win');
+    } else sfx('lose');
+    render();
+  },
+  quizNext: () => {
+    app.ui.quiz = newQuiz();
+    app.ui.quizPick = null;
+    render();
+  },
+  handHelp: () => {
+    app.ui.learn = 'rankings';
+    render();
+  },
   // Tiến lên
   toggleCard: (d) => {
     const sel = (app.ui.sel ||= new Set());
@@ -508,6 +627,14 @@ root.addEventListener('input', (e) => {
     app.nick = el.value.slice(0, 20);
     save('sn.nick', app.nick);
   }
+  recordDraft(el);
+  if (el.id === 'raiseAmt') {
+    app.ui.raise = Number(el.value);
+    const go = document.getElementById('raiseGo');
+    const a = app.table?.state?.hand?.actions;
+    if (go && a?.raise) go.textContent = `${a.raise.bet ? t('hd_bet') : t('hd_raiseTo')} ${Number(el.value).toLocaleString('en-US')}`;
+    root.querySelectorAll('[data-act=raisePreset]').forEach((b) => b.classList.toggle('on', Number(b.dataset.v) === Number(el.value)));
+  }
   if (el.id === 'joinCode') {
     const up = el.value.toUpperCase();
     if (up !== el.value) {
@@ -517,12 +644,20 @@ root.addEventListener('input', (e) => {
     }
   }
 });
+function recordDraft(el) {
+  if (!el.closest?.('#createForm') || !el.id) return;
+  draftOf()[el.id] = el.type === 'checkbox' ? el.checked : el.value;
+}
 root.addEventListener('change', (e) => {
+  recordDraft(e.target);
   if (e.target.id === 'volume') actions.setVolume({ v: e.target.value });
   if (e.target.matches?.('[data-keep]')) e.target.dataset.dirty = '1';
 });
 addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && app.ui.invite) actions.inviteClose();
+  if (e.key === 'Escape' && app.ui.settings) actions.settingsClose();
+  else if (e.key === 'Escape' && app.ui.rules) actions.rulesClose();
+  else if (e.key === 'Escape' && app.ui.learn) actions.learnClose();
+  else if (e.key === 'Escape' && app.ui.invite) actions.inviteClose();
   else if (e.key === 'Escape' && app.ui.drawer) actions.drawer();
 });
 addEventListener('beforeinstallprompt', (e) => {

@@ -19,7 +19,7 @@ src/table/core.js          plain-data table logic (seats, ledger, hands, timers,
 src/table/HostDO.js        per-host table limit (5)
 src/games/<game>/engine.js game engine (common interface — see README)
 src/lib/protocol.js        message whitelist, validation, nick cleaning, token bucket
-public/js/domain/          pure rules shared with the client (cards, shuffle, xidach, tienlen)
+public/js/domain/          pure rules shared with the client (cards, shuffle, xidach, tienlen, holdem, fengshui)
 public/js/App.js           state, router, render loop, actions, socket handling
 public/js/views/           (app) => HTML string; game views registered in views/table.js GAME_VIEWS
 public/js/ui/, lib/        cards, ring, accent picker, esc, i18n, qr, csv, motion, store
@@ -60,13 +60,19 @@ the `pong` — because the table processes messages in order, every reply to `ms
 The helper throttles itself under the server's token bucket. `server.advance(ms)` moves the clock and
 fires due alarms (in-process only).
 
+## UI rule
+
+No page scrolling: the table, home, settings sheet, rules sheet and learn guide must fit the viewport
+(360×640 up to 2560×1400). Long content goes into tabs inside a sheet, not a scrolling page.
+
 ## Security model
 
 See the table in README → *Security model*. Key invariants with tests:
 
 1. Other players' cards appear in a viewer's snapshot only after that hand is settled or the hand is over
    (Xì dách dealer cards only after the dealer has checked someone; Tiến lên hands only at the end).
-   Tiến lên's "must include 3♠" hint is sent to the leader only.
+   Tiến lên's "must include 3♠" hint is sent to the leader only. Hold'em hole cards: owner only, live hands
+   at showdown / all-in run-out; a fold-out winner never shows.
 2. A pid can't be chosen by the client (`hello` accepts only `secret` + `nick`); host powers need the host
    secret.
 3. Unknown types/fields, prototype keys, non-integer/negative/overflow amounts, oversized frames and
@@ -76,5 +82,5 @@ See the table in README → *Security model*. Key invariants with tests:
 
 - Step 1 (lobby + table actor + Xì dách): done.
 - Step 2 (Tiến lên miền Nam: combos, chặt heo toggles, tới trắng, scoring table): done.
-- Step 3: Texas Hold'em (7-card evaluator, side pots, odd chip, all-in run-out) + tests + screenshots.
+- Step 3 (Texas Hold'em: 7-card evaluator, side pots, odd chip, short all-in rule, run-out, beginner guide): done.
 - Commit `package-lock.json` once dependencies are installed with network access, then switch CI to `npm ci`.

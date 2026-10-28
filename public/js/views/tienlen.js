@@ -17,9 +17,9 @@ export function tienlenOptionsForm(o, p = 'o-') {
     `<label class="field mini"><span>${esc(t(`tl_${k}`))}</span><input id="${p}${k}" data-keep type="number" inputmode="numeric" min="${min}" max="${max}" value="${d[k]}"></label>`;
   return `
     <label class="field"><span>${esc(t('tl_unit'))}</span><input id="${p}unit" data-keep type="number" inputmode="numeric" min="1" max="10000" value="${d.unit}"></label>
-    <fieldset class="group"><legend>${esc(t('tl_chopRules'))}</legend>${CHOP_KEYS.map(check).join('')}</fieldset>
-    <fieldset class="group"><legend>${esc(t('tl_instantRules'))}</legend>${INSTANT_KEYS.map(check).join('')}</fieldset>
-    <fieldset class="group pts"><legend>${esc(t('tl_points'))}</legend>
+    <fieldset class="group" data-g="chop"><legend>${esc(t('tl_chopRules'))}</legend>${CHOP_KEYS.map(check).join('')}</fieldset>
+    <fieldset class="group" data-g="instant"><legend>${esc(t('tl_instantRules'))}</legend>${INSTANT_KEYS.map(check).join('')}</fieldset>
+    <fieldset class="group pts" data-g="points"><legend>${esc(t('tl_points'))}</legend>
       ${POINT_KEYS.map((k) => num(k, 0, 100)).join('')}
       ${check('thoi')}
     </fieldset>`;

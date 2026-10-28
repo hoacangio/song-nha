@@ -1,20 +1,21 @@
 import { esc } from '../lib/esc.js';
 import { t } from '../lib/i18n.js';
 import { GAME_VIEWS } from './games.js';
-import { lookPanel } from '../ui/accent.js';
 import { cardHtml } from '../ui/cards.js';
 
 const GAMES = [
   { id: 'xidach', icon: '21', ready: true },
   { id: 'tienlen', icon: '2♠', ready: true },
-  { id: 'holdem', icon: 'A♥', ready: false },
+  { id: 'holdem', icon: 'A♥', ready: true },
 ];
 
-const PAGE = 5;
+/** Recent tables per page: fewer on short screens so the home page never scrolls. */
+const pageSize = () => (typeof innerHeight === 'number' && innerHeight < 720 && innerWidth < 1024 ? 2 : 3);
 
 export function homeView(app) {
   const h = app.home;
   const recent = app.recent;
+  const PAGE = pageSize();
   const pages = Math.max(1, Math.ceil(recent.length / PAGE));
   const page = Math.min(h.page, pages - 1);
   const shown = recent.slice(page * PAGE, page * PAGE + PAGE);
@@ -24,6 +25,7 @@ export function homeView(app) {
       <div class="brand"><span class="logo" aria-hidden="true">♠</span><div><h1>Sòng Nhà</h1><p class="tagline">${esc(t('tagline'))}</p></div></div>
       <div class="head-tools">
         <button class="btn ghost sm" data-act="setLang" data-v="${app.lang === 'vi' ? 'en' : 'vi'}">${app.lang === 'vi' ? 'EN' : 'VI'}</button>
+        <button class="btn ghost icon" data-act="settingsOpen" data-v="table" aria-label="${esc(t('settings'))}" title="${esc(t('settings'))}">⚙</button>
       </div>
     </header>
 
@@ -50,20 +52,16 @@ export function homeView(app) {
            </button>`,
         ).join('')}
       </div>
-      <details class="opts">
-        <summary>${esc(t('options'))}</summary>
-        <form id="createForm" class="opt-grid">
-          <label class="field"><span>${esc(t('startChips'))}</span><input id="o-startChips" data-keep name="startChips" type="number" inputmode="numeric" min="100" max="1000000" step="100" value="1000"></label>
-          <label class="field"><span>${esc(t('turnSeconds'))}</span><input id="o-turnSeconds" data-keep name="turnSeconds" type="number" inputmode="numeric" min="10" max="120" value="30"></label>
-          ${GAME_VIEWS[h.game].options(null, 'o-')}
-        </form>
-      </details>
-      <button class="btn primary block" data-act="createTable" ${app.busy ? 'disabled' : ''}>${esc(t('create'))}</button>
+      <div class="create-row">
+        <button class="btn" data-act="rulesOpen">⚙ ${esc(t('options'))}${h.draft?.[h.game] && Object.keys(h.draft[h.game]).length ? ' •' : ''}</button>
+        ${h.game === 'holdem' ? `<button class="btn learn-btn" data-act="learnOpen" data-v="rankings" title="${esc(t('learn_open'))}" aria-label="${esc(t('learn_open'))}">🎓<span class="learn-txt"> ${esc(t('learn_short'))}</span></button>` : ''}
+        <button class="btn primary grow" data-act="createTable" ${app.busy ? 'disabled' : ''}>${esc(t('create'))}</button>
+      </div>
     </section>
 
     <div class="side-col">
     <section class="panel">
-      <h2>${esc(t('join'))}</h2>
+      <h2 class="join-h">${esc(t('join'))}</h2>
       <form class="join" data-submit="joinCode">
         <input id="joinCode" data-keep class="code-input" maxlength="12" autocapitalize="characters" autocomplete="off"
                spellcheck="false" placeholder="${esc(t('codePh'))}" aria-label="${esc(t('codePh'))}">
@@ -73,7 +71,13 @@ export function homeView(app) {
     </section>
 
     <section class="panel">
-      <h2>${esc(t('recent'))}</h2>
+      <div class="recent-head"><h2>${esc(t('recent'))}</h2>${
+        pages > 1
+          ? `<div class="pager"><button class="btn ghost sm" data-act="page" data-v="${page - 1}" ${page === 0 ? 'disabled' : ''} aria-label="‹">‹</button>
+             <span>${page + 1}/${pages}</span>
+             <button class="btn ghost sm" data-act="page" data-v="${page + 1}" ${page >= pages - 1 ? 'disabled' : ''} aria-label="›">›</button></div>`
+          : ''
+      }</div>
       ${
         shown.length
           ? `<ul class="recent">${shown
@@ -86,23 +90,45 @@ export function homeView(app) {
           </li>`,
               )
               .join('')}</ul>
-          ${
-            pages > 1
-              ? `<div class="pager"><button class="btn ghost sm" data-act="page" data-v="${page - 1}" ${page === 0 ? 'disabled' : ''}>‹</button>
-                 <span>${esc(t('page'))} ${page + 1}/${pages}</span>
-                 <button class="btn ghost sm" data-act="page" data-v="${page + 1}" ${page >= pages - 1 ? 'disabled' : ''}>›</button></div>`
-              : ''
-          }`
+`
           : `<p class="muted">${esc(t('noRecent'))}</p>`
       }
-    </section>
-    <section class="panel">
-      <h2>${esc(t('look'))}</h2>
-      ${lookPanel(app)}
     </section>
     </div>
     </div>
     ${app.installPrompt ? `<button class="btn ghost block" data-act="install">${esc(t('install'))}</button>` : ''}
     <footer class="foot">${esc(t('footer'))}</footer>
   </main>`;
+}
+
+/** Fields of the "rules / options" sheet for the selected game (values restored from the draft). */
+export function rulesFields(app) {
+  const h = app.home;
+  return `<label class="field"><span>${esc(t('startChips'))}</span><input id="o-startChips" data-keep type="number" inputmode="numeric" min="100" max="1000000" step="100" value="1000"></label>
+    <label class="field"><span>${esc(t('turnSeconds'))}</span><input id="o-turnSeconds" data-keep type="number" inputmode="numeric" min="10" max="120" value="30"></label>
+    ${GAME_VIEWS[h.game].options(null, 'o-')}`;
+}
+
+/** Option groups shown as tabs in the rules sheet (fieldset[data-g]); the rest is "general". */
+export const RULE_GROUPS = { xidach: ['payouts'], tienlen: ['chop', 'instant', 'points'], holdem: [] };
+
+export function rulesView(app) {
+  const h = app.home;
+  const groups = RULE_GROUPS[h.game] || [];
+  const tab = ['general', ...groups].includes(app.ui.rulesTab) ? app.ui.rulesTab : 'general';
+  const tabs = groups.length
+    ? `<nav class="tabs" role="tablist">${['general', ...groups]
+        .map((g) => `<button role="tab" class="tab ${g === tab ? 'on' : ''}" aria-selected="${g === tab}" data-act="rulesTab" data-v="${g}">${esc(t(`rg_${g}`))}</button>`)
+        .join('')}</nav>`
+    : '';
+  return `<div class="overlay" data-act="rulesClose">
+    <div class="sheet rules ${groups.length ? 'tabbed' : ''}" role="dialog" aria-modal="true" aria-label="${esc(t('options'))}" data-stop>
+      <div class="learn-head"><h2>${esc(t('options'))} · ${esc(t(h.game))}</h2><button class="btn ghost icon" data-act="rulesClose" aria-label="${esc(t('close'))}">✕</button></div>
+      ${tabs}
+      <form id="createForm" class="opt-grid rules-grid" data-tab="${tab}">${rulesFields(app)}</form>
+      <div class="row">
+        <button class="btn" data-act="rulesReset">${esc(t('reset'))}</button>
+        <button class="btn primary grow" data-act="rulesClose">${esc(t('save'))}</button>
+      </div>
+    </div></div>`;
 }
