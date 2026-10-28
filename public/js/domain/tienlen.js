@@ -15,6 +15,9 @@ export const isRedTwo = (c) => c === '2D' || c === '2H';
 
 export const TIENLEN_DEFAULTS = Object.freeze({
   unit: 10, // chips per point
+  endMode: 'rank', // 'rank': play on to rank Nhất → Bét · 'first': the game ends when someone goes out
+  rankTop: 2, // rank mode: Bét pays Nhất (points)
+  rankMid: 1, // rank mode, 4 players: Ba pays Nhì (points)
   // Chặt heo (each toggle documented in README)
   chop3PairsSingle2: true, // 3 đôi thông chặt 1 heo
   chopQuadSingle2: true, // tứ quý chặt 1 heo

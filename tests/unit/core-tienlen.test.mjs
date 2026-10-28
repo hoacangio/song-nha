@@ -138,12 +138,15 @@ test('chopPay off: no payment for chặt', async () => {
   assert.deepEqual(t.seats.map((s) => s?.chips), c0);
 });
 
-test('end of game: losers pay per card, cóng and thối 2', async () => {
-  const t = await rigged([
-    ['3S'],
-    ['5S', '2S', '2H'],
-    ['6S', '7C', '8D', '9H', 'TC'],
-  ]);
+test('"first out ends the game" mode: losers pay per card, cóng and thối 2', async () => {
+  const t = await rigged(
+    [
+      ['3S'],
+      ['5S', '2S', '2H'],
+      ['6S', '7C', '8D', '9H', 'TC'],
+    ],
+    { game: { endMode: 'first' } },
+  );
   // make seat 1 have played already, seat 2 never played (cóng)
   t.hand.played[1] = true;
   const unit = t.opts.game.unit;
@@ -211,4 +214,90 @@ test('options are sanitised', async () => {
   assert.equal(t.opts.game.chopPay, true);
   assert.equal(t.opts.game.cong, 100);
   assert.equal(t.opts.seats, 4);
+});
+
+test('rank mode (default): the first player out does not end the game; play goes on to Bét', async () => {
+  const t = await rigged([
+    ['3S', '7S'],
+    ['4S', '9H'],
+    ['5S', 'TH'],
+    ['6S', '2H'],
+  ]);
+  assert.equal(t.opts.game.endMode, 'rank');
+  const unit = t.opts.game.unit;
+  const c0 = t.seats.map((s) => s?.chips);
+  await handle(t, H, { t: 'play', cards: ['3S'] }, 1);
+  await handle(t, A, { t: 'play', cards: ['4S'] }, 2);
+  await handle(t, B, { t: 'play', cards: ['5S'] }, 3);
+  await handle(t, C, { t: 'play', cards: ['6S'] }, 4);
+  await handle(t, H, { t: 'play', cards: ['7S'] }, 5); // Host goes out → Nhất
+  assert.equal(t.hand.phase, 'play', 'game continues');
+  assert.deepEqual(t.hand.finished, [0]);
+  assert.equal(t.hand.turn, 1);
+  const v = snapshot(t, { ...A, connected: none }, 6);
+  assert.equal(v.hand.seats[0].rank, 1);
+  assert.equal(await err(t, H, { t: 'pass' }), 'not_your_turn', 'a finished player never gets a turn');
+  await handle(t, A, { t: 'play', cards: ['9H'] }, 6); // Nhì
+  await handle(t, B, { t: 'play', cards: ['TH'] }, 7); // Ba → only Cúc left: Bét
+  assert.equal(t.hand.phase, 'done');
+  assert.deepEqual(t.hand.result.order, [0, 1, 2, 3]);
+  const D = t.opts.game;
+  // Bét → Nhất: rankTop + thối heo đỏ; Ba → Nhì: rankMid
+  assert.equal(t.seats[0].chips, c0[0] + (D.rankTop + D.thoi2Red) * unit);
+  assert.equal(t.seats[1].chips, c0[1] + D.rankMid * unit);
+  assert.equal(t.seats[2].chips, c0[2] - D.rankMid * unit);
+  assert.equal(t.seats[3].chips, c0[3] - (D.rankTop + D.thoi2Red) * unit);
+  assert.equal(t.tlWinnerPid, H.pid);
+  const kinds = t.history[0].rows.map((r) => r.kind);
+  assert.deepEqual(kinds, ['rank_1', 'rank_2', 'rank_3', 'rank_last']);
+});
+
+test('rank mode: when the finisher\'s last play is not beaten, the next player with cards leads', async () => {
+  const t = await rigged([
+    ['3S', '2H'],
+    ['4S', '8C', '9C'],
+    ['5S', 'TC', 'TD'],
+    ['6S', 'JH', 'QH'],
+  ]);
+  await handle(t, H, { t: 'play', cards: ['3S'] }, 1);
+  await handle(t, A, { t: 'play', cards: ['4S'] }, 2);
+  await handle(t, B, { t: 'play', cards: ['5S'] }, 3);
+  await handle(t, C, { t: 'play', cards: ['6S'] }, 4);
+  await handle(t, H, { t: 'play', cards: ['2H'] }, 5); // out with an unbeatable 2♥
+  await handle(t, A, { t: 'pass' }, 6);
+  await handle(t, B, { t: 'pass' }, 7);
+  await handle(t, C, { t: 'pass' }, 8);
+  assert.equal(t.hand.phase, 'play');
+  assert.equal(t.hand.trick, null, 'new round');
+  assert.equal(t.hand.turn, 1, 'the next player after the finisher leads');
+  assert.equal(await err(t, A, { t: 'pass' }), 'must_lead');
+});
+
+test('rank mode: players who have not played when someone goes out are cóng and pay double', async () => {
+  const t = await rigged([['3S'], ['4S', '5C', '7D'], ['6S', '8C', '9D']]);
+  const unit = t.opts.game.unit;
+  const c0 = t.seats.map((s) => s?.chips);
+  await handle(t, H, { t: 'play', cards: ['3S'] }, 1); // goes out on the very first play
+  assert.equal(t.hand.phase, 'done', 'everyone else is cóng → game over');
+  assert.deepEqual(t.hand.cong, [1, 2]);
+  const pay = 2 * t.opts.game.rankTop * unit;
+  assert.equal(t.seats[1].chips, c0[1] - pay);
+  assert.equal(t.seats[2].chips, c0[2] - pay);
+  assert.equal(t.seats[0].chips, c0[0] + 2 * pay);
+  assert.deepEqual(t.history[0].rows.map((r) => r.kind), ['rank_1', 'cong', 'cong']);
+});
+
+test('rank mode: chips are conserved over many bot games', async () => {
+  const t = await table([H]);
+  for (let i = 0; i < 3; i++) await handle(t, H, { t: 'addBot' }, 0);
+  await handle(t, H, { t: 'start' }, 0);
+  let now = 0;
+  let games = 0;
+  for (let i = 0; i < 6000 && games < 15; i++) {
+    const before = t.handNo;
+    await tick(t, (now += 31_000));
+    if (t.handNo !== before) games++;
+    assert.equal(total(t), 4000);
+  }
+  assert.ok(games >= 10, `${games} games`);
 });

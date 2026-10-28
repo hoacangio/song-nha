@@ -194,7 +194,7 @@ function settingsTab(app, gv) {
 
 function inviteHtml(app) {
   const url = tableUrl(app.table.code);
-  return `<div class="overlay" data-act="inviteClose">
+  return `<div class="overlay" data-ov="invite" data-act="inviteClose">
     <div class="sheet invite" role="dialog" aria-modal="true" aria-label="${esc(t('invite'))}" data-stop>
       <div class="invite-code">${esc(app.table.code)}</div>
       <div class="qr">${qrSvg(url)}</div>

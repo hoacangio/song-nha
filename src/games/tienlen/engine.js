@@ -28,11 +28,11 @@ const BOOL_KEYS = [
   'instantFivePairSeq',
   'thoi',
 ];
-const POINT_KEYS = ['perCard', 'cong', 'thoi2Black', 'thoi2Red', 'thoiQuad', 'thoi3Pairs', 'toiTrang'];
+const POINT_KEYS = ['perCard', 'cong', 'thoi2Black', 'thoi2Red', 'thoiQuad', 'thoi3Pairs', 'toiTrang', 'rankTop', 'rankMid'];
 
 export function sanitizeOptions(raw = {}) {
   const d = TIENLEN_DEFAULTS;
-  const o = { unit: clampInt(raw.unit, 1, 10_000, d.unit) };
+  const o = { unit: clampInt(raw.unit, 1, 10_000, d.unit), endMode: ['rank', 'first'].includes(raw.endMode) ? raw.endMode : d.endMode };
   for (const k of BOOL_KEYS) o[k] = typeof raw[k] === 'boolean' ? raw[k] : d[k];
   for (const k of POINT_KEYS) o[k] = clampInt(raw[k], 0, 100, d[k]);
   return o;
@@ -64,6 +64,9 @@ export function startHand(t, deck, now) {
     hands,
     played: Array(n).fill(false),
     passed: Array(n).fill(false),
+    out: Array(n).fill(false), // finished (or cóng) — no longer takes turns
+    finished: [], // seats in the order they went out (rank mode)
+    cong: [], // seats that had not played a card when the first player went out (rank mode)
     trick: null, // { seat, cards, combo, chop }
     chain: 0, // accumulated chặt chồng value (points)
     leader: null,
@@ -107,14 +110,17 @@ export function involved(h, seat) {
   return !!h && h.phase !== 'done' && h.players.includes(seat);
 }
 
-function nextActive(h, from) {
+const liveSeats = (h) => h.players.filter((p) => !h.out[p]);
+
+/** Next seat after `from` (in seat order) that satisfies `pred`. */
+function nextWhere(h, from, pred) {
   const order = h.players;
   const i = order.indexOf(from);
   for (let k = 1; k <= order.length; k++) {
     const p = order[(i + k) % order.length];
-    if (!h.passed[p]) return p;
+    if (pred(p)) return p;
   }
-  return from;
+  return -1;
 }
 
 function transfer(t, from, to, points) {
@@ -150,20 +156,40 @@ function play(t, h, seat, cards, now) {
   h.played[seat] = true;
   h.mustInclude = null;
   h.trick = { seat, cards: sortCards(cards), combo, chop: chop || chopsChop };
-  if (!h.hands[seat].length) return finish(t, h, now, seat, null);
+  if (!h.hands[seat].length) {
+    if (o.endMode === 'first') return finish(t, h, now, seat, null);
+    // Rank mode: this player goes out (Nhất, Nhì, …) and the others play on.
+    h.out[seat] = true;
+    h.finished.push(seat);
+    if (h.finished.length === 1) {
+      for (const p of h.players) {
+        if (!h.out[p] && !h.played[p]) {
+          h.out[p] = true;
+          h.cong.push(p);
+        }
+      }
+    }
+    const live = liveSeats(h);
+    if (live.length <= 1) return finishRank(t, h, now, live);
+  }
   advance(t, h, seat, now);
 }
 
 function advance(t, h, from, now) {
-  const next = nextActive(h, from);
-  if (next === h.trick.seat) {
-    // Everyone else passed → new round, the last player leads.
+  // Players who may still beat the table: in the game, not passed, not the owner of the trick.
+  const canAnswer = (p) => !h.out[p] && !h.passed[p] && p !== h.trick.seat;
+  if (!h.players.some(canAnswer)) {
+    // Everyone passed → new round. The trick owner leads; if they already went out,
+    // the next player still holding cards leads.
+    const owner = h.trick.seat;
     h.passed.fill(false);
     h.trick = null;
     h.chain = 0;
-    h.leader = next;
+    h.leader = h.out[owner] ? nextWhere(h, owner, (p) => !h.out[p]) : owner;
+    h.turn = h.leader;
+  } else {
+    h.turn = nextWhere(h, from, canAnswer);
   }
-  h.turn = next;
   h.deadline = now + t.opts.turnSeconds * 1000;
 }
 
@@ -188,16 +214,63 @@ function finish(t, h, now, winner, instant) {
     const lp = instant ? { points: o.toiTrang, cong: false, parts: [{ k: 'toiTrang', v: o.toiTrang }] } : losePoints(h.hands[p], { played: h.played[p] }, o);
     const chips = transfer(t, p, winner, lp.points);
     won += chips;
-    rows[p] = { delta: -chips, points: lp.points, cong: lp.cong, parts: lp.parts };
+    rows[p] = { rank: 0, last: false, delta: -chips, points: lp.points, cong: lp.cong, parts: lp.parts };
   }
-  rows[winner] = { delta: won, points: 0, cong: false, parts: [] };
-  h.result = { winner, instant, rows };
+  rows[winner] = { rank: 1, last: false, delta: won, points: 0, cong: false, parts: [] };
+  h.result = { winner, instant, mode: 'first', order: [winner], rows };
   h.autoNext = true;
   h.nextAt = now + 8000;
   t.tlWinnerPid = t.seats[winner].pid;
 }
 
+/**
+ * Rank-mode settlement. Order: players who went out, then the last one holding cards, then cóng players.
+ * Bét pays Nhất `rankTop`; with 4+ players Ba pays Nhì `rankMid`. A cóng player pays Nhất 2×rankTop instead
+ * of a positional payment. Everyone still holding cards pays Nhất the thối penalties left in their hand.
+ */
+function finishRank(t, h, now, live) {
+  const o = t.opts.game;
+  const order = [...h.finished, ...live, ...h.cong];
+  const n = order.length;
+  const first = order[0];
+  const delta = Array(t.seats.length).fill(0);
+  const parts = Array(t.seats.length).fill(null).map(() => []);
+  const pay = (from, to, points, k) => {
+    if (points <= 0 || from === to) return;
+    const chips = transfer(t, from, to, points);
+    delta[from] -= chips;
+    delta[to] += chips;
+    parts[from].push({ k, v: points });
+  };
+  const isCong = (p) => h.cong.includes(p);
+  if (n >= 2 && !isCong(order[n - 1])) pay(order[n - 1], first, o.rankTop, 'rankTop');
+  if (n >= 4 && !isCong(order[n - 2])) pay(order[n - 2], order[1], o.rankMid, 'rankMid');
+  for (const p of h.cong) pay(p, first, o.rankTop * 2, 'cong');
+  if (o.thoi) {
+    for (const p of [...live, ...h.cong]) {
+      const thoi = losePoints(h.hands[p], { played: true }, o).parts.filter((x) => x.k.startsWith('thoi'));
+      for (const x of thoi) pay(p, first, x.v, x.k);
+    }
+  }
+  h.phase = 'done';
+  h.turn = null;
+  h.deadline = null;
+  const rows = Array(t.seats.length).fill(null);
+  order.forEach((p, i) => {
+    rows[p] = { rank: i + 1, last: i === n - 1, delta: delta[p], points: 0, cong: isCong(p), parts: parts[p] };
+  });
+  h.result = { winner: first, instant: null, mode: 'rank', order, rows };
+  h.autoNext = true;
+  h.nextAt = now + 10000;
+  t.tlWinnerPid = t.seats[first].pid;
+}
+
 export function act(t, h, seat, msg, now) {
+  if (!h.out) {
+    h.out = Array(t.seats.length).fill(false);
+    h.finished = [];
+    h.cong = [];
+  }
   if (msg.t === 'play') return play(t, h, seat, msg.cards, now);
   if (msg.t === 'pass') return pass(t, h, seat, now);
   throw new GameError('bad_action');
@@ -235,6 +308,10 @@ export function view(t, h, viewer) {
       cards: i === viewer || done ? h.hands[i].slice() : null,
       passed: h.passed[i],
       played: h.played[i],
+      // Public progress in rank mode: who already went out (and in which place) and who is cóng.
+      rank: h.finished ? h.finished.indexOf(i) + 1 : 0,
+      out: !!h.out?.[i],
+      cong: !!h.cong?.includes(i),
       result: done ? h.result.rows[i] : null,
     };
   });
@@ -251,7 +328,8 @@ export function view(t, h, viewer) {
     mustInclude: viewer >= 0 && viewer === h.turn ? h.mustInclude : null,
     firstLead: !!h.mustInclude,
     lastChop: h.lastChop,
-    result: done ? { winner: h.result.winner, instant: h.result.instant } : null,
+    mode: t.opts.game.endMode,
+    result: done ? { winner: h.result.winner, instant: h.result.instant, mode: h.result.mode, order: h.result.order } : null,
     seats,
     actions: null,
   };
@@ -265,11 +343,25 @@ export function summary(t, h) {
   return h.players.map((p) => {
     const r = h.result.rows[p];
     const isWin = p === h.result.winner;
+    const kind =
+      h.result.mode === 'rank'
+        ? r.cong
+          ? 'cong'
+          : r.last
+            ? 'rank_last'
+            : `rank_${r.rank}`
+        : isWin
+          ? h.result.instant
+            ? `toi_${h.result.instant}`
+            : 'win'
+          : r.cong
+            ? 'cong'
+            : 'lose';
     return {
       nick: nick(p),
       role: isWin ? 'winner' : 'player',
       cards: h.hands[p].slice(),
-      kind: isWin ? (h.result.instant ? `toi_${h.result.instant}` : 'win') : r.cong ? 'cong' : 'lose',
+      kind,
       total: h.hands[p].length,
       bet: null,
       delta: r.delta,

@@ -184,9 +184,11 @@ code { font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; }
 .felt-wrap { display: flex; min-height: 0; padding: 30px 38px 34px; }
 .felt {
   position: relative; flex: 1; border-radius: 50%;
-  background: var(--felt-pattern, none), radial-gradient(ellipse at 50% 40%, var(--felt-hi) 0%, var(--felt) 72%);
+  /* The edge darkening is a gradient stop (cheap to repaint) rather than a blurred inset shadow. */
+  background: var(--felt-pattern, none),
+    radial-gradient(ellipse at 50% 40%, var(--felt-hi) 0%, var(--felt) 72%, color-mix(in srgb, var(--felt) 70%, #000) 100%);
   border: 10px solid var(--rail); color: var(--felt-ink);
-  box-shadow: inset 0 0 0 2px var(--rail-trim), inset 0 0 40px rgb(0 0 0 / 0.35), 0 0 0 1px rgb(0 0 0 / 0.5), var(--shadow);
+  box-shadow: inset 0 0 0 2px var(--rail-trim), 0 0 0 1px rgb(0 0 0 / 0.5), var(--shadow);
 }
 /* Faint theme name printed on the felt, like a casino table. */
 .felt::before {
@@ -520,7 +522,7 @@ code { font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; }
     position: relative; height: 230px; border-radius: 999px; overflow: hidden;
     background: var(--felt-pattern, none), radial-gradient(ellipse at 50% 35%, var(--felt-hi), var(--felt) 72%);
     border: 12px solid var(--rail); color: var(--felt-ink);
-    box-shadow: inset 0 0 0 2px var(--rail-trim), inset 0 0 50px rgb(0 0 0 / 0.4), var(--shadow);
+    box-shadow: inset 0 0 0 2px var(--rail-trim), var(--shadow);
     display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 28px; padding: 0 60px;
   }
   .hero-felt::after {
@@ -677,3 +679,8 @@ code { font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; }
   .defs dt { margin-top: 4px; }
   .learn .note { display: none; }
 }
+.badge.rank { background: var(--surface); color: var(--ink); }
+.ranking { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 2px; font-size: 13px; }
+.ranking b { display: inline-block; min-width: 44px; color: #ffd9a8; }
+/* An overlay that is already open does not replay its open animation when the UI updates. */
+.overlay.steady, .overlay.steady .sheet { animation: none; }

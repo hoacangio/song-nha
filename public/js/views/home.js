@@ -121,7 +121,7 @@ export function rulesView(app) {
         .map((g) => `<button role="tab" class="tab ${g === tab ? 'on' : ''}" aria-selected="${g === tab}" data-act="rulesTab" data-v="${g}">${esc(t(`rg_${g}`))}</button>`)
         .join('')}</nav>`
     : '';
-  return `<div class="overlay" data-act="rulesClose">
+  return `<div class="overlay" data-ov="rules" data-act="rulesClose">
     <div class="sheet rules ${groups.length ? 'tabbed' : ''}" role="dialog" aria-modal="true" aria-label="${esc(t('options'))}" data-stop>
       <div class="learn-head"><h2>${esc(t('options'))} · ${esc(t(h.game))}</h2><button class="btn ghost icon" data-act="rulesClose" aria-label="${esc(t('close'))}">✕</button></div>
       ${tabs}

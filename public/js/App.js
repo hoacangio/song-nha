@@ -59,12 +59,15 @@ function render() {
     if (el.id) kept[el.id] = el.type === 'checkbox' ? el.checked : el.value;
   });
   const openDetails = [...root.querySelectorAll('details[open]')].map((d) => d.className);
+  // Overlays that are already on screen must not replay their open animation on re-render.
+  const shownOverlays = new Set([...root.querySelectorAll('.overlay[data-ov]')].map((o) => o.dataset.ov));
 
   root.innerHTML =
     (app.route.name === 'table' && app.table ? tableView(app) : homeView(app)) +
     (app.ui.rules && app.route.name !== 'table' ? rulesView(app) : '') +
     (app.ui.settings ? settingsView(app) : '') +
     (app.ui.learn ? learnView(app) : '');
+  for (const o of root.querySelectorAll('.overlay[data-ov]')) if (shownOverlays.has(o.dataset.ov)) o.classList.add('steady');
   const cf = document.getElementById('createForm');
   applyDraft(cf);
   // Rules sheet tabs: show only the active group (all fields stay in the DOM for drafts).
@@ -139,6 +142,21 @@ function applyTheme() {
   else html.dataset.accent = app.accent;
   // Browser/OS chrome follows the page background.
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', app.theme === 'light' ? '#f6f1ea' : '#161311');
+}
+
+/**
+ * Look & sound changes only touch CSS variables on <html> plus the settings sheet itself, so update
+ * that sheet in place instead of re-rendering the whole screen (the table, cards and seats stay put).
+ */
+function refreshSettings() {
+  const sheet = root.querySelector('.sheet.settings');
+  if (!sheet) return render();
+  const tpl = document.createElement('template');
+  tpl.innerHTML = settingsView(app);
+  const fresh = tpl.content.querySelector('.sheet.settings');
+  const focusId = document.activeElement?.id;
+  sheet.innerHTML = fresh.innerHTML;
+  if (focusId) document.getElementById(focusId)?.focus({ preventScroll: true });
 }
 
 // ---------- routing ----------
@@ -310,14 +328,14 @@ export const actions = {
     save('sn.table', d.v);
     applyTheme();
     sfx('shuffle');
-    render();
+    refreshSettings();
   },
   setBirthYear: () => {
     const y = Math.round(Number(document.getElementById('birthYear')?.value));
     if (!isBirthYear(y)) {
       app.birthYear = null;
       save('sn.birthYear', null);
-      return render();
+      return refreshSettings();
     }
     app.birthYear = y;
     save('sn.birthYear', y);
@@ -325,28 +343,27 @@ export const actions = {
     // Pick the most favourable colour for that mệnh the first time.
     const best = suggestedAccent(y);
     if (best) actions.setAccent({ v: best });
-    toast(`${menhOf(y).canChi} · ${t('fs_menh')} ${t(`el_${menhOf(y).element}`)}`);
-    render();
+    refreshSettings();
   },
   setAccent: (d) => {
     if (!ACCENTS.includes(d.v)) return;
     app.accent = d.v;
     save('sn.accent', d.v);
     applyTheme();
-    render();
+    refreshSettings();
   },
   toggleTheme: () => {
     app.theme = app.theme === 'light' ? 'dark' : 'light';
     save('sn.theme', app.theme);
     applyTheme();
-    render();
+    refreshSettings();
   },
   toggleSound: () => {
     app.sound = !app.sound;
     save('sn.sound', app.sound);
     setSoundEnabled(app.sound);
     sfx('turn');
-    render();
+    refreshSettings();
   },
   setVolume: (d) => {
     app.volume = Math.min(1, Math.max(0, Number(d.v)));
@@ -448,7 +465,9 @@ export const actions = {
     send(v >= a.raise.max ? { t: 'allin' } : { t: 'raise', amount: v });
   },
   settingsOpen: (d) => {
+    const wasOpen = !!app.ui.settings;
     app.ui.settings = d.v || 'table';
+    if (wasOpen) return refreshSettings(); // switching tabs inside the sheet
     app.ui.drawer = false;
     render();
   },

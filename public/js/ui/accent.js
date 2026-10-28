@@ -83,7 +83,7 @@ export function settingsView(app) {
         <button role="radio" aria-checked="${app.lang === 'en'}" class="seg-b ${app.lang === 'en' ? 'on' : ''}" ${app.lang === 'en' ? '' : 'data-act="setLang" data-v="en"'}>English</button>
       </div>`;
   }
-  return `<div class="overlay" data-act="settingsClose">
+  return `<div class="overlay" data-ov="settings" data-act="settingsClose">
     <div class="sheet settings" role="dialog" aria-modal="true" aria-label="${esc(t('settings'))}" data-stop>
       <div class="learn-head"><h2>⚙ ${esc(t('settings'))}</h2><button class="btn ghost icon" data-act="settingsClose" aria-label="${esc(t('close'))}">✕</button></div>
       <nav class="tabs" role="tablist">${SETTINGS_TABS.map(

@@ -7,7 +7,7 @@ import { oneShot } from '../lib/motion.js';
 
 const CHOP_KEYS = ['chop3PairsSingle2', 'chopQuadSingle2', 'chopQuadPair2', 'chopQuad3Pairs', 'chop4Pairs', 'chopPay'];
 const INSTANT_KEYS = ['instantDragon', 'instantFour2', 'instantSixPairs', 'instantFivePairSeq'];
-const POINT_KEYS = ['perCard', 'cong', 'thoi2Black', 'thoi2Red', 'thoiQuad', 'thoi3Pairs', 'toiTrang'];
+const POINT_KEYS = ['rankTop', 'rankMid', 'perCard', 'cong', 'thoi2Black', 'thoi2Red', 'thoiQuad', 'thoi3Pairs', 'toiTrang'];
 
 export function tienlenOptionsForm(o, p = 'o-') {
   const d = o || TIENLEN_DEFAULTS;
@@ -16,6 +16,11 @@ export function tienlenOptionsForm(o, p = 'o-') {
   const num = (k, min, max) =>
     `<label class="field mini"><span>${esc(t(`tl_${k}`))}</span><input id="${p}${k}" data-keep type="number" inputmode="numeric" min="${min}" max="${max}" value="${d[k]}"></label>`;
   return `
+    <label class="field"><span>${esc(t('tl_endMode'))}</span>
+      <select id="${p}endMode" data-keep>
+        <option value="rank" ${d.endMode !== 'first' ? 'selected' : ''}>${esc(t('tl_endRank'))}</option>
+        <option value="first" ${d.endMode === 'first' ? 'selected' : ''}>${esc(t('tl_endFirst'))}</option>
+      </select></label>
     <label class="field"><span>${esc(t('tl_unit'))}</span><input id="${p}unit" data-keep type="number" inputmode="numeric" min="1" max="10000" value="${d.unit}"></label>
     <fieldset class="group" data-g="chop"><legend>${esc(t('tl_chopRules'))}</legend>${CHOP_KEYS.map(check).join('')}</fieldset>
     <fieldset class="group" data-g="instant"><legend>${esc(t('tl_instantRules'))}</legend>${INSTANT_KEYS.map(check).join('')}</fieldset>
@@ -28,6 +33,7 @@ export function tienlenOptionsForm(o, p = 'o-') {
 export function readTienlenOptions(form, p = 'o-') {
   const el = (k) => form.querySelector(`#${p}${k}`);
   const o = {};
+  if (el('endMode')) o.endMode = el('endMode').value === 'first' ? 'first' : 'rank';
   const unit = Math.round(Number(el('unit')?.value));
   if (Number.isFinite(unit)) o.unit = unit;
   for (const k of [...CHOP_KEYS, ...INSTANT_KEYS, 'thoi']) if (el(k)) o[k] = !!el(k).checked;
@@ -49,8 +55,16 @@ export function tienlenKindLabel(r) {
   if (!r?.kind) return '';
   if (r.kind.startsWith('toi_')) return `${t('tl_toiTrangShort')}: ${t(`tl_${r.kind}`)}`;
   if (r.kind === 'win') return t('tl_first');
+  if (r.kind === 'rank_last') return t('tl_rank_last');
+  if (r.kind.startsWith('rank_')) return t(`tl_${r.kind}`);
   if (r.kind === 'cong') return t('tl_congBadge');
   return `${r.total} ${t('tl_cardsLeft')}`;
+}
+
+/** "Nhất", "Nhì", "Ba", or "Bét" for the last place. */
+export function rankLabel(rank, total) {
+  if (!rank) return '';
+  return rank === total && total > 1 ? t('tl_rank_last') : t(`tl_rank_${rank}`);
 }
 
 /** Validates the current selection against the table for the Play button. */
@@ -71,16 +85,25 @@ export function tienlenSeat(app, i, isMe) {
   const hs = h?.seats?.[i];
   if (!hs) return '';
   const parts = [];
-  if (!isMe && h.phase !== 'done') parts.push(`<span class="count-back"><span class="card back xs"></span><b>${hs.count}</b></span>`);
-  if (hs.passed && h.phase !== 'done') parts.push(`<span class="badge pass">${esc(t('tl_passed'))}</span>`);
+  if (!isMe && h.phase !== 'done' && hs.count) parts.push(`<span class="count-back"><span class="card back xs"></span><b>${hs.count}</b></span>`);
+  if (hs.passed && h.phase !== 'done' && !hs.out) parts.push(`<span class="badge pass">${esc(t('tl_passed'))}</span>`);
+  const total = h.players.length;
   if (h.result) {
-    if (h.result.winner === i) parts.push(`<span class="badge win">${esc(h.result.instant ? t('tl_toiTrangShort') : t('tl_first'))}</span>`);
-    else if (hs.result?.cong) parts.push(`<span class="badge pass">${esc(t('tl_congBadge'))}</span>`);
-    if (hs.result) {
-      const d = hs.result.delta;
+    const r = hs.result;
+    if (h.result.instant && h.result.winner === i) parts.push(`<span class="badge win">${esc(t('tl_toiTrangShort'))}</span>`);
+    else if (r?.cong) parts.push(`<span class="badge pass">${esc(t('tl_congBadge'))}</span>`);
+    else if (r?.rank) parts.push(`<span class="badge ${r.rank === 1 ? 'win' : 'rank'}">${esc(rankLabel(r.rank, total))}</span>`);
+    if (r) {
+      const d = r.delta;
       const a = oneShot(`hdelta-${s.handNo}-${i}`, 'pop', 380);
       parts.push(`<span class="delta ${a.cls} ${d > 0 ? 'up' : d < 0 ? 'down' : ''}" style="${a.style}">${esc(signed(d))}</span>`);
     }
+  } else if (hs.rank) {
+    // Went out while the others play on.
+    const a = oneShot(`hrank-${s.handNo}-${i}`, 'pop', 380);
+    parts.push(`<span class="badge ${hs.rank === 1 ? 'win' : 'rank'} ${a.cls}" style="${a.style}">${esc(rankLabel(hs.rank, total))}</span>`);
+  } else if (hs.cong) {
+    parts.push(`<span class="badge pass">${esc(t('tl_congBadge'))}</span>`);
   }
   if (h.lastChop && h.lastChop.to === i) parts.push(`<span class="badge chop">${esc(t('tl_chop'))}</span>`);
   return parts.join('');
@@ -94,7 +117,21 @@ export function tienlenCenter(app) {
   const out = [];
   if (h.phase === 'done') {
     const w = h.result.winner;
-    out.push(`<div class="phase">${esc(nick(w))} ${esc(h.result.instant ? `— ${t('tl_toiTrangShort')}` : `— ${t('tl_first')}`)}</div>`);
+    if (h.result.mode === 'rank' && !h.result.instant) {
+      const total = h.players.length;
+      out.push(`<div class="phase">${esc(t('phase_done'))}</div>`);
+      out.push(
+        `<ol class="ranking">${h.result.order
+          .map((p, k) => {
+            const r = h.seats[p]?.result;
+            const label = r?.cong ? t('tl_congBadge') : rankLabel(k + 1, total);
+            return `<li><b>${esc(label)}</b> ${esc(nick(p))}</li>`;
+          })
+          .join('')}</ol>`,
+      );
+    } else {
+      out.push(`<div class="phase">${esc(nick(w))} ${esc(h.result.instant ? `— ${t('tl_toiTrangShort')}` : `— ${t('tl_first')}`)}</div>`);
+    }
     if (h.result.instant) out.push(`<div class="center-sub">${esc(t(`tl_toi_${h.result.instant}`))}</div>`);
     if (h.nextAt) out.push(`<div class="center-sub">${esc(t('nextHand'))} <b data-countdown="${h.nextAt}"></b>s</div>`);
     return out.join('');
@@ -158,7 +195,10 @@ function tienlenActions(app) {
     return `<span class="muted">${esc(s.canStart ? t('waitHost') : t('needPlayers'))}</span>`;
   }
   if (!h.actions) {
+    const mine = h.seats[s.you.seat];
     const turnNick = s.seats[h.turn]?.nick ?? '';
+    if (mine?.rank) return `<span class="muted">${esc(t('tl_youOut').replace('{rank}', rankLabel(mine.rank, h.players.length)))} · ${esc(t('turnOf'))} ${esc(turnNick)}</span>`;
+    if (mine?.cong) return `<span class="muted">${esc(t('tl_congBadge'))} · ${esc(t('turnOf'))} ${esc(turnNick)}</span>`;
     return `<span class="muted">${esc(t('turnOf'))} ${esc(turnNick)}</span>`;
   }
   const st = selectionState(app);

@@ -189,7 +189,7 @@ export function learnView(app) {
              </div>`
       }`;
   }
-  return `<div class="overlay learn-overlay" data-act="learnClose">
+  return `<div class="overlay learn-overlay" data-ov="learn" data-act="learnClose">
     <div class="sheet learn" role="dialog" aria-modal="true" aria-label="${esc(c.title)}" data-stop>
       <div class="learn-head"><h2>${esc(c.title)}</h2><button class="btn ghost icon" data-act="learnClose" aria-label="${esc(c.close)}">✕</button></div>
       <nav class="tabs" role="tablist">${tabs}</nav>
