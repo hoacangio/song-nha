@@ -160,7 +160,9 @@ free seat and at least one human online, falling back to any game.
 Every game has a short course. The learn menu (course list with progress and 🏅) lives in its own place:
 on desktop in the right column of the home page and as the 🎓 *Học luật* tab of the table sidebar; on
 mobile in the home **bottom bar** (🃏 Chơi · 🕘 Gần đây · 🎓 Học luật · ⚙ Cài đặt) and in the table ☰ drawer.
-“?” next to Hold'em cards opens the hand-ranking lesson. Each course has:
+Courses open as their own page at `/hoc/<game>/<lesson|exam|cert>` (deep-linkable; switching lessons
+replaces the URL so Back leaves the course in one step; an open table stays connected and “Về bàn” returns
+to it). “?” next to Hold'em cards opens the hand-ranking lesson. Each course has:
 
 | Course | Lessons | Exam questions (generated, graded by the game's own rule engine) |
 | --- | --- | --- |

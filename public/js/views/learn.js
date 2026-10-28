@@ -19,6 +19,7 @@ const S = {
     exam: 'Kiểm tra',
     cert: 'Chứng chỉ',
     close: 'Đóng',
+    backHome: 'Trang chủ', backTable: 'Về bàn', nextLesson: 'Bài tiếp', toExam: 'Làm bài kiểm tra',
     intro: (n, p) => `${n} câu hỏi, đúng từ ${p} câu trở lên là đạt. Câu hỏi được tạo ngẫu nhiên và chấm theo đúng luật của game.`,
     best: (b) => `Điểm cao nhất: ${b}/${EXAM_SIZE}`,
     start: 'Bắt đầu kiểm tra',
@@ -59,6 +60,7 @@ const S = {
     exam: 'Exam',
     cert: 'Certificate',
     close: 'Close',
+    backHome: 'Home', backTable: 'Back to table', nextLesson: 'Next lesson', toExam: 'Take the exam',
     intro: (n, p) => `${n} questions; ${p} or more correct to pass. Questions are generated at random and graded by the game's own rules.`,
     best: (b) => `Best score: ${b}/${EXAM_SIZE}`,
     start: 'Start the exam',
@@ -208,7 +210,8 @@ function certBody(app, game) {
     <p class="small muted">${esc(x.note)}</p></div>`;
 }
 
-export function learnView(app) {
+/** The course page (route /hoc/<game>/<tab>): header, lesson list, lesson content. */
+export function learnPage(app) {
   const x = s();
   const L = app.ui.learn;
   const game = L.game;
@@ -230,13 +233,29 @@ export function learnView(app) {
   ].join('');
   const lesson = lessons.find((l) => l.id === tab);
   const body = lesson ? renderBlocks(lesson.blocks) : tab === 'exam' ? examBody(app, game) : certBody(app, game);
-  return `<div class="overlay learn-overlay" data-ov="learn" data-act="learnClose">
-    <div class="sheet learn" role="dialog" aria-modal="true" aria-label="${esc(x.title)}" data-stop>
-      <div class="learn-head"><h2>🎓 ${esc(course.title(learnLang()))}</h2><button class="btn ghost icon" data-act="learnClose" aria-label="${esc(x.close)}">✕</button></div>
+  const d = lessonsDone(game, prog, learnLang());
+  const n = lessons.length;
+  const pct = Math.round(((d / n) * 0.5 + Math.min(1, prog.best / PASS_SCORE) * 0.5) * 100);
+  const back = app.table ? x.backTable : x.backHome;
+  const step = lesson ? `${lessons.indexOf(lesson) + 1}/${n}` : '';
+  const next = lesson ? lessons[lessons.indexOf(lesson) + 1]?.id || 'exam' : null;
+  return `<main class="learn-page learn">
+    <header class="learn-head">
+      <button class="btn ghost back-btn" data-act="learnClose" aria-label="${esc(back)}" title="${esc(back)}">‹<span class="back-txt">${esc(back)}</span></button>
+      <div class="learn-title"><span class="small muted">🎓 ${esc(x.title)}</span><h1>${esc(course.title(learnLang()))}</h1></div>
       <div class="course-chips">${chips}</div>
-      <nav class="tabs" role="tablist">${tabs}</nav>
-      <div class="learn-body">${body}</div>
-    </div></div>`;
+    </header>
+    <div class="learn-main">
+      <aside class="learn-aside">
+        <div class="learn-prog"><span class="small muted">${esc(x.progress(d, n, prog.best))}</span><span class="course-bar" aria-hidden="true"><i style="width:${pct}%"></i></span></div>
+        <nav class="tabs learn-nav" role="tablist" aria-label="${esc(x.title)}">${tabs}</nav>
+      </aside>
+      <section class="learn-content">
+        <div class="learn-body" role="tabpanel">${lesson ? `<h2 class="lesson-h"><span class="muted small">${esc(step)}</span> ${esc(lesson.title)}</h2>` : ''}${body}</div>
+        ${next ? `<div class="learn-foot"><button class="btn primary sm" data-act="learnTab" data-v="${next}">${esc(next === 'exam' ? x.toExam : x.nextLesson)} ›</button></div>` : ''}
+      </section>
+    </div>
+  </main>`;
 }
 
 /** The learning menu: one row per course with progress; used in the sidebar, the home page and the bottom bar. */

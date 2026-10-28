@@ -23,6 +23,7 @@ src/lib/protocol.js        message whitelist, validation, nick cleaning, token b
 public/js/domain/          pure rules shared with the client (cards, shuffle, xidach, tienlen, holdem, fengshui)
 public/js/App.js           state, router, render loop, actions, socket handling
 public/js/views/           (app) => HTML string; game views registered in views/games.js GAME_VIEWS
+                           routes: / (home), /t/CODE (table), /hoc/GAME[/TAB] (course page, views/learn.js learnPage)
 public/js/learn/           courses: lessons + exam generators per game (pure), certificate canvas
 public/js/ui/, lib/        cards, ring, accent picker, esc, i18n, qr, csv, motion, store
 scripts/local-server.mjs   offline server running the real DO classes on Node 22

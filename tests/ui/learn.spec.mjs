@@ -132,7 +132,7 @@ test('no saved name: the certificate asks for one, saves it, and it becomes the 
   await expect(page.locator('img.cert-img')).toBeVisible();
   await expect(page.locator('#certName')).toHaveValue('Thái Hòa');
   // saved on the device and used on the home page and at the table
-  await page.reload();
+  await page.goto('/');
   await expect(page.locator('#nick')).toHaveValue('Thái Hòa');
   await page.click('[data-act=createTable]');
   await expect(page.locator('.seat.me')).toBeVisible();

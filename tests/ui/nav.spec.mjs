@@ -55,3 +55,33 @@ test('desktop: learn menu in the right column, no bottom bar; table sidebar has 
   expect(await fits(page)).toBeLessThanOrEqual(0);
   await ctx.close();
 });
+
+test('courses are a page: /hoc/<game>/<lesson> deep links, Back returns to the table still seated', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, locale: 'vi-VN' });
+  const page = await ctx.newPage();
+  await page.goto('/hoc/tienlen/exam');
+  await expect(page.locator('main.learn-page')).toBeVisible();
+  await expect(page.locator('.overlay')).toHaveCount(0);
+  await expect(page.locator('.learn-nav [data-v=exam]')).toHaveClass(/on/);
+  await page.click('.learn-head [data-act=learnClose]'); // opened from a link → home
+  await expect(page).toHaveURL(/\/$/);
+
+  await page.fill('#nick', 'Hòa');
+  await page.click('[data-act=createTable]');
+  await expect(page.locator('.seat.me')).toBeVisible();
+  const tableUrl = page.url();
+  await page.click('.menu-btn');
+  await page.click('.tabs [data-act=tab][data-v=learn]');
+  await page.click('.tab-body [data-act=learnOpen][data-game=xidach]');
+  await expect(page).toHaveURL(/\/hoc\/xidach$/);
+  await expect(page.locator('.back-btn')).toHaveAttribute('aria-label', 'Về bàn');
+  // lesson switches replace the URL, "Bài tiếp" walks through the lessons
+  await page.click('.learn-foot [data-act=learnTab]');
+  await expect(page).toHaveURL(/\/hoc\/xidach\/[a-z-]+$/);
+  expect(await page.evaluate(() => document.documentElement.scrollHeight - innerHeight)).toBeLessThanOrEqual(0);
+  await page.goBack(); // one step back leaves the course
+  await expect(page).toHaveURL(tableUrl);
+  await expect(page.locator('.seat.me')).toBeVisible();
+  expect(await page.evaluate(() => window.App.app.table.status)).toBe('open');
+  await ctx.close();
+});

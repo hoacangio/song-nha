@@ -10,7 +10,7 @@ import { api } from './services/api.js';
 import { TableSocket } from './services/socket.js';
 import { homeView, rulesView, rulesFields, askNameView } from './views/home.js';
 import { settingsView } from './ui/accent.js';
-import { learnView, learnLang } from './views/learn.js';
+import { learnPage, learnLang } from './views/learn.js';
 import { COURSES, COURSE_IDS, PASS_SCORE, EXAM_SIZE, isComplete, normalizeProgress } from './learn/index.js';
 import { drawCertificate, certificateId } from './learn/certificate.js';
 import { tableView, tableUrl } from './views/table.js';
@@ -65,14 +65,20 @@ function render() {
   });
   const openDetails = [...root.querySelectorAll('details[open]')].map((d) => d.className);
   // Overlays that are already on screen must not replay their open animation on re-render.
+  // Keep the reading position of a lesson when a background update (e.g. the table) re-renders.
+  const lb = root.querySelector('.learn-body');
+  const learnScroll = lb && app.ui.learn ? { key: `${app.ui.learn.game}/${app.ui.learn.tab}`, top: lb.scrollTop, k: lb.dataset.k } : null;
   const shownOverlays = new Set([...root.querySelectorAll('.overlay[data-ov]')].map((o) => o.dataset.ov));
 
   root.innerHTML =
-    (app.route.name === 'table' && app.table ? tableView(app) : homeView(app)) +
+    (app.route.name === 'learn' && app.ui.learn
+      ? learnPage(app)
+      : app.route.name === 'table' && app.table
+        ? tableView(app)
+        : homeView(app)) +
     (app.ui.rules && app.route.name !== 'table' ? rulesView(app) : '') +
     (app.ui.settings ? settingsView(app) : '') +
     (app.ui.askName ? askNameView(app) : '') +
-    (app.ui.learn ? learnView(app) : '') +
     (app.toast ? `<div class="toast" role="status">${esc(app.toast.text)}</div>` : '');
   for (const o of root.querySelectorAll('.overlay[data-ov]')) if (shownOverlays.has(o.dataset.ov)) o.classList.add('steady');
   const cf = document.getElementById('createForm');
@@ -104,14 +110,21 @@ function render() {
       }
     }
   }
+  const nb = root.querySelector('.learn-body');
+  if (nb && app.ui.learn) {
+    nb.dataset.k = `${app.ui.learn.game}/${app.ui.learn.tab}`;
+    if (learnScroll && learnScroll.k === nb.dataset.k) nb.scrollTop = learnScroll.top;
+  }
   tickCountdowns();
 }
 
 function transition(fn) {
   if (document.startViewTransition && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    document.startViewTransition(() => {
+    // A transition can be aborted (e.g. the mobile URL bar resizes the viewport); the DOM update still runs.
+    const vt = document.startViewTransition(() => {
       fn();
     });
+    for (const p of [vt.ready, vt.finished, vt.updateCallbackDone]) p?.catch(() => {});
   } else fn();
 }
 
@@ -201,6 +214,11 @@ async function makeCertificate(name) {
 
 // ---------- routing ----------
 function parseRoute() {
+  const l = location.pathname.match(/^\/hoc\/([a-z]+)(?:\/([a-z0-9-]+))?\/?$/);
+  if (l && COURSE_IDS.includes(l[1])) {
+    const tabs = [...COURSES[l[1]].lessons(learnLang()).map((x) => x.id), 'exam', 'cert'];
+    return { name: 'learn', game: l[1], tab: tabs.includes(l[2]) ? l[2] : tabs[0] };
+  }
   const m = location.pathname.match(/^\/t\/([^/]+)\/?$/);
   if (m) {
     const code = decodeURIComponent(m[1]).toUpperCase();
@@ -213,6 +231,16 @@ function go(path, replace = false) {
   if (replace) history.replaceState(null, '', path);
   else history.pushState(null, '', path);
   transition(route);
+}
+
+/** Opens a course page. Switching lessons replaces the URL so Back leaves the course in one step. */
+function learnGo(game, tab, replace) {
+  if (!replace && app.route.name !== 'learn') app.learnFrom = location.pathname;
+  const path = `/hoc/${game}${tab ? `/${tab}` : ''}`;
+  if (replace) {
+    history.replaceState(null, '', path); // switching lessons: instant, no page transition
+    route();
+  } else go(path);
 }
 
 /** The name the player saved on this device (used at tables and on certificates). */
@@ -233,6 +261,16 @@ function setName(v) {
 
 function route() {
   const r = parseRoute();
+  if (r.name === 'learn') {
+    // Course page. An open table stays connected underneath so "Về bàn" returns to it as it was.
+    app.ui.learn = { game: r.game, tab: r.tab };
+    app.ui.drawer = false;
+    app.route = r;
+    if (r.tab === 'cert') makeCertificate();
+    markSeen();
+    return render();
+  }
+  app.ui.learn = null;
   if (r.name === 'table') {
     // Ask for a name before sitting down (once per device); "guest" skips without saving.
     if (!savedName() && !app.guestOk) {
@@ -584,27 +622,21 @@ export const actions = {
   // ----- learn: courses, exams, certificates -----
   learnOpen: (d) => {
     const game = COURSE_IDS.includes(d.game) ? d.game : app.table?.state?.game || app.home.game;
-    const first = COURSES[game].lessons(learnLang())[0].id;
-    app.ui.learn = { game, tab: d.tab || first };
-    app.ui.drawer = false;
-    markSeen();
-    render();
+    learnGo(game, d.tab, false);
   },
   learnGame: (d) => {
-    if (!COURSE_IDS.includes(d.v)) return;
-    app.ui.learn = { game: d.v, tab: COURSES[d.v].lessons(learnLang())[0].id };
-    markSeen();
-    render();
+    if (COURSE_IDS.includes(d.v)) learnGo(d.v, null, true);
   },
   learnTab: (d) => {
-    app.ui.learn = { ...app.ui.learn, tab: d.v };
-    markSeen();
-    if (d.v === 'cert') makeCertificate();
-    render();
+    if (app.ui.learn) learnGo(app.ui.learn.game, d.v, true);
   },
   learnClose: () => {
-    app.ui.learn = null;
-    render();
+    // Back to wherever the course was opened from (home or the table); a direct link goes home.
+    if (app.learnFrom) {
+      const from = app.learnFrom;
+      app.learnFrom = null;
+      go(from);
+    } else go('/');
   },
   examStart: () => {
     const game = app.ui.learn.game;
