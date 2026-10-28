@@ -13,16 +13,22 @@
     "bindings": [
       { "name": "TABLE", "class_name": "TableDO" },
       { "name": "HOST", "class_name": "HostDO" },
-      { "name": "LOBBY", "class_name": "LobbyDO" }
+      { "name": "LOBBY", "class_name": "LobbyDO" },
+      { "name": "QUOTA", "class_name": "QuotaDO" }
     ]
   },
   "migrations": [
     { "tag": "v1", "new_sqlite_classes": ["TableDO", "HostDO"] },
-    { "tag": "v2", "new_sqlite_classes": ["LobbyDO"] }
+    { "tag": "v2", "new_sqlite_classes": ["LobbyDO"] },
+    { "tag": "v3", "new_sqlite_classes": ["QuotaDO"] }
   ],
   "vars": {
     // Extra allowed WebSocket origins, comma separated (same-origin is always allowed).
-    "ALLOWED_ORIGINS": ""
+    "ALLOWED_ORIGINS": "",
+    // Table-creation quota (anti-spam): per IPv4 address / IPv6 /64, and for everyone together.
+    "CREATE_PER_HOUR": "10",
+    "CREATE_PER_DAY": "30",
+    "CREATE_GLOBAL_PER_HOUR": "1500"
   },
   "observability": { "enabled": true }
 }

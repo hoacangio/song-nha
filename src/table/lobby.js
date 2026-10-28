@@ -69,7 +69,12 @@ export class LobbyDO {
     if (url.pathname === '/upsert') {
       const e = cleanEntry(body, now);
       if (!e) return json({ error: 'bad_entry' }, 400);
-      if (!tables[e.code] && Object.keys(tables).length >= LOBBY_MAX) return json({ error: 'full' }, 503);
+      if (!tables[e.code] && Object.keys(tables).length >= LOBBY_MAX) {
+        // Full: drop the entry least useful to a random player (nobody online, then the stalest).
+        const victim = Object.values(tables).sort((a, b) => a.online - b.online || a.at - b.at)[0];
+        if (victim.online > 0 && e.online === 0) return json({ error: 'full' }, 503);
+        delete tables[victim.code];
+      }
       tables[e.code] = e;
       await this.ctx.storage.put('tables', tables);
       return json({ ok: true });

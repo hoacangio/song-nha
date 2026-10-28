@@ -23,7 +23,7 @@ import { forgetMotion } from './lib/motion.js';
 import { ACCENTS, normalizeAccent, isBirthYear, suggestedAccent, menhOf } from './domain/fengshui.js';
 import { sfx, cuesFor, setSoundEnabled, setVolume, unlock as unlockAudio } from './ui/sfx.js';
 
-const CODE_RE = /^[A-Z]{3,8}-\d{3}$/;
+const CODE_RE = /^[A-Z]{3,8}-\d{3,4}$/;
 const root = document.getElementById('app');
 
 const app = {
@@ -480,7 +480,12 @@ export const actions = {
     const r = await api.createTable(app.secret, app.home.game, readCreateOptions()).catch(() => ({ ok: false, data: {} }));
     app.busy = false;
     if (!r.ok) {
-      app.home.error = r.data?.error === 'too_many_tables' ? t('tooMany') : t('createFailed');
+      app.home.error =
+        r.data?.error === 'too_many_tables'
+          ? t('tooMany')
+          : r.data?.error === 'create_rate'
+            ? t('createRate', Math.max(1, Math.ceil((r.data.retryAfter || 60) / 60)))
+            : t('createFailed');
       return render();
     }
     rememberTable(r.data.code, { game: app.home.game, host: true });

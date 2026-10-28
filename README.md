@@ -45,7 +45,7 @@ Browser (vanilla ES modules, no build)            Cloudflare
 - **`src/table/TableDO.js`** — one Durable Object per table. Every event (message, close, alarm, HTTP)
   runs through a promise queue, so the table is a strict actor even across `await`s. State is one
   storage value; a single alarm drives turn timeouts, bot moves, seat holds, auto next hand and the
-  7-day idle expiry.
+  idle expiry (6 h for a table where no hand was ever dealt, 7 days otherwise).
 - **`src/table/core.js`** — plain-data table logic (seats, ledger, hand lifecycle, timers, snapshots).
   Unit-testable without sockets.
 - **`src/games/<game>/engine.js`** — game engines with a common interface
@@ -64,6 +64,7 @@ Browser (vanilla ES modules, no build)            Cloudflare
 | Identity | Random device UUID in localStorage, sent only in `hello`; broadcast id is `pid = SHA-256(pid:salt:secret)[:16]` with a per-table salt; host key = `SHA-256(host:secret)`. |
 | Input | 2 KB frame cap, JSON reviver rejects `__proto__`/`constructor`/`prototype`, whitelisted message types and fields, integer chip amounts, seat indices and options clamped server-side. |
 | Abuse | Per-socket token bucket (20 burst, 8/s), socket cap 40 per table, Origin check on WS and mutating API calls, 5 tables per host. |
+| Storage / junk tables | `QuotaDO` creation quota: 10/hour and 30/day per IPv4 address or IPv6 /64 (keys hashed, no raw IPs stored), 1,500/hour globally; `429 create_rate` + `Retry-After`. Never-played tables expire after 6 h idle. 270,000 codes (`WORD-NNNN`). Score board capped at 50 rows (seated players kept), history at 100 hands. Hello/close by spectators don't write storage. Lobby evicts empty entries when full. Limits are `CREATE_PER_HOUR`, `CREATE_PER_DAY`, `CREATE_GLOBAL_PER_HOUR` vars. |
 | Browser | CSP `script-src 'self'`, no inline scripts, `frame-ancestors 'none'`, every user string through `esc()`. |
 
 ## Protocol
@@ -203,7 +204,8 @@ Workers Free limits for Durable Objects per day: 100,000 requests, 13,000 GB-s d
 A typical 4-player Xì dách hand ≈ 12 incoming messages + ~6 alarms ≈ **7 DO requests** and, since every
 state change writes the table and its alarm, ≈ **35 rows written**. Rows written is the binding limit:
 ≈ **2,500 hands/day** (roughly 40 table-hours of continuous play), which is plenty for friends and family.
-Idle tables hibernate and cost nothing until the 7-day expiry alarm deletes them.
+Idle tables hibernate and cost nothing until the expiry alarm deletes them (6 h if never played, else 7 days).
+Worst case for junk: the global quota (1,500/h) × 6 h ≈ 9,000 empty tables of ~1 KB each, all self-deleting.
 
 ---
 

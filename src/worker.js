@@ -3,21 +3,24 @@
 import { TableDO } from './table/TableDO.js';
 import { HostDO } from './table/HostDO.js';
 import { LobbyDO } from './table/lobby.js';
+import { QuotaDO, checkCreateQuota } from './table/quota.js';
 import { hostKeyFor } from './table/core.js';
-import { json, readJson, originAllowed } from './lib/http.js';
+import { json, readJson, originAllowed, API_HEADERS } from './lib/http.js';
 import { CODE_RE, normalizeCode, isSecret } from './lib/protocol.js';
 import { isGame } from './games/index.js';
 import { randomInt } from '../public/js/domain/shuffle.js';
 
-export { TableDO, HostDO, LobbyDO };
+export { TableDO, HostDO, LobbyDO, QuotaDO };
 
 const WORDS = [
   'BIEN', 'CAU', 'CHE', 'DUA', 'GIO', 'HEO', 'LUA', 'MAI', 'MEO', 'MIT', 'MUA', 'NANG', 'NUI', 'PHO', 'RONG',
   'SAO', 'SEN', 'SONG', 'TRA', 'TRANG', 'XOAI', 'BUN', 'CAM', 'DAO', 'KHE', 'LAN', 'NGAN', 'TRE', 'VAN', 'CUC',
 ];
 
+// 30 words × 9000 numbers = 270,000 codes (old 3-digit codes still parse). A big space keeps codes
+// hard to guess and impossible to exhaust within the creation quota.
 function newCode() {
-  return `${WORDS[randomInt(WORDS.length)]}-${String(randomInt(1000)).padStart(3, '0')}`;
+  return `${WORDS[randomInt(WORDS.length)]}-${1000 + randomInt(9000)}`;
 }
 
 const tableStub = (env, code) => env.TABLE.get(env.TABLE.idFromName(`table:${code}`));
@@ -27,6 +30,16 @@ async function createTable(request, env) {
   const body = await readJson(request);
   if (!body || !isSecret(body.secret) || !isGame(body.game)) return json({ error: 'bad_request' }, 400);
   const options = body.options && typeof body.options === 'object' && !Array.isArray(body.options) ? body.options : {};
+  // The per-host limit is keyed by a secret the client picks, so it can't stop a script that sends a
+  // fresh secret each time; the quota (per network + global) can. It runs first, so a flood is turned
+  // away before touching any other object.
+  const quota = await checkCreateQuota(request, env);
+  if (quota) {
+    return new Response(JSON.stringify({ error: 'create_rate', retryAfter: Math.ceil(quota.retryMs / 1000) }), {
+      status: 429,
+      headers: { ...API_HEADERS, 'retry-after': String(Math.ceil(quota.retryMs / 1000)) },
+    });
+  }
   const hostKey = await hostKeyFor(body.secret);
   const host = hostStub(env, hostKey);
   for (let attempt = 0; attempt < 6; attempt++) {

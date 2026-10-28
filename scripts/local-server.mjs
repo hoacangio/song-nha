@@ -334,16 +334,21 @@ function attachSocket(sock, serverEnd, instance, state) {
 // ---------- Server ----------
 export async function startServer({ port = 8787, host = '127.0.0.1', quiet = false, env: extraEnv = {} } = {}) {
   const worker = (await import(pathToFileURL(path.join(ROOT, 'src/worker.js')).href)).default;
-  const { TableDO, HostDO, LobbyDO } = await import(pathToFileURL(path.join(ROOT, 'src/worker.js')).href);
-  const env = { ALLOWED_ORIGINS: '', ...extraEnv };
+  const { TableDO, HostDO, LobbyDO, QuotaDO } = await import(pathToFileURL(path.join(ROOT, 'src/worker.js')).href);
+  // Local dev and the test suites create many tables from 127.0.0.1, so the creation quota is generous
+  // here unless a test asks for the production numbers.
+  const env = { ALLOWED_ORIGINS: '', CREATE_PER_HOUR: '100000', CREATE_PER_DAY: '100000', CREATE_GLOBAL_PER_HOUR: '100000', ...extraEnv };
   env.TABLE = new EmuNamespace(TableDO, env);
   env.HOST = new EmuNamespace(HostDO, env);
   env.LOBBY = new EmuNamespace(LobbyDO, env);
+  env.QUOTA = new EmuNamespace(QuotaDO, env);
   env.ASSETS = makeAssets(await parseHeadersFile());
 
   const toRequest = async (req, base) => {
     const headers = new Headers();
     for (const [k, v] of Object.entries(req.headers)) if (typeof v === 'string') headers.set(k, v);
+    // Like Cloudflare's edge: the client address, unless a test sets it to play several clients.
+    if (!headers.has('cf-connecting-ip')) headers.set('cf-connecting-ip', String(req.socket.remoteAddress || '').replace(/^::ffff:/, ''));
     const init = { method: req.method, headers };
     if (!['GET', 'HEAD'].includes(req.method)) {
       const chunks = [];
@@ -400,7 +405,7 @@ export async function startServer({ port = 8787, host = '127.0.0.1', quiet = fal
   if (!quiet) console.log(`Sòng Nhà local server on http://${host}:${actual}`);
 
   const allStorages = () =>
-    [env.TABLE, env.HOST, env.LOBBY].flatMap((ns) => [...ns.objects.values()].map((e) => e.state.storage));
+    [env.TABLE, env.HOST, env.LOBBY, env.QUOTA].flatMap((ns) => [...ns.objects.values()].map((e) => e.state.storage));
   return {
     port: actual,
     url: `http://${host}:${actual}`,

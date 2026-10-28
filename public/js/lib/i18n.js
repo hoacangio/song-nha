@@ -88,6 +88,7 @@ const DICT = {
     reconnecting: 'Đang kết nối lại…',
     tableGone: 'Bàn không tồn tại hoặc đã bị xoá.',
     tooMany: 'Bạn đã có 5 bàn. Hãy xoá bớt bàn cũ.',
+    createRate: (m) => `Bạn tạo bàn quá nhanh. Thử lại sau khoảng ${m} phút.`,
     createFailed: 'Không tạo được bàn. Thử lại sau.',
     badCode: 'Mã bàn không hợp lệ.',
     commit: 'Cam kết (SHA-256)',
@@ -306,6 +307,7 @@ const DICT = {
     reconnecting: 'Reconnecting…',
     tableGone: 'This table does not exist or was deleted.',
     tooMany: 'You already host 5 tables. Delete an old one first.',
+    createRate: (m) => `Too many new tables from your network. Try again in about ${m} min.`,
     createFailed: 'Could not create the table. Try again.',
     badCode: 'Invalid table code.',
     commit: 'Commitment (SHA-256)',
@@ -441,5 +443,8 @@ const DICT = {
 let lang = 'vi';
 export const setLang = (l) => (lang = DICT[l] ? l : 'vi');
 export const getLang = () => lang;
-export const t = (key) => DICT[lang][key] ?? DICT.en[key] ?? key;
+export const t = (key, ...args) => {
+  const v = DICT[lang][key] ?? DICT.en[key] ?? key;
+  return typeof v === 'function' ? v(...args) : v;
+};
 export const errText = (code) => DICT[lang][`err_${code}`] ?? DICT[lang].err_generic;

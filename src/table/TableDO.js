@@ -175,9 +175,11 @@ export class TableDO {
       const pid = await pidFor(t.salt, msg.secret);
       const isHost = (await hostKeyFor(msg.secret)) === t.hostKey;
       ws.serializeAttachment({ pid, isHost, nick });
+      const before = JSON.stringify(t);
       onJoin(t, { pid, nick, isHost });
       await tick(t, now);
-      await this.persist();
+      // Reconnect churn must not turn into a storage write per connection.
+      if (JSON.stringify(t) !== before) await this.persist();
       send(ws, { t: 'welcome', pid, isHost });
       return this.broadcast();
     }
@@ -213,8 +215,9 @@ export class TableDO {
     if (!att.pid) return;
     const stillHere = this.sockets().some((s) => s !== ws && s.readyState === 1 && safeAttachment(s).pid === att.pid);
     if (!stillHere) {
+      const before = JSON.stringify(t);
       onLeave(t, att.pid, Date.now());
-      await this.persist();
+      if (JSON.stringify(t) !== before) await this.persist(); // spectators leaving change nothing
       this.broadcast();
     }
   }

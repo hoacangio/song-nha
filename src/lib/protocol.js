@@ -94,7 +94,7 @@ export function cleanNick(s) {
   return [...cleaned].slice(0, NICK_MAX).join('');
 }
 
-export const CODE_RE = /^[A-Z]{3,8}-\d{3}$/;
+export const CODE_RE = /^[A-Z]{3,8}-\d{3,4}$/;
 export const normalizeCode = (s) => (typeof s === 'string' ? s.trim().toUpperCase() : '');
 
 /** Token bucket: capacity tokens, refilled at rate tokens/second. */

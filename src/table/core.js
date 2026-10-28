@@ -8,6 +8,10 @@ import { isChipAmount, isSeatIndex, cleanNick } from '../lib/protocol.js';
 
 export const SEAT_HOLD_MS = 60_000;
 export const IDLE_EXPIRY_MS = 7 * 24 * 3600 * 1000;
+/** A table where no hand was ever dealt is most likely junk (or abandoned): it goes much sooner. */
+export const UNUSED_EXPIRY_MS = 6 * 3600 * 1000;
+/** Score-board rows kept per table. Seated players are never dropped; the oldest leavers go first. */
+export const LEDGER_MAX = 50;
 export const BOT_DELAY_MS = 900;
 export const HISTORY_MAX = 100;
 export const MAX_SOCKETS = 40;
@@ -70,6 +74,21 @@ function removeSeat(t, i) {
   if (!s) return;
   if (!s.bot) t.ledger[s.pid] = { ...(t.ledger[s.pid] || {}), nick: s.nick, chips: s.chips };
   t.seats[i] = null;
+}
+
+/**
+ * Bounds the score board: someone rotating secrets to sit again and again would otherwise grow the
+ * stored table without limit. Seated players always keep their row.
+ */
+export function pruneLedger(t, max = LEDGER_MAX) {
+  const pids = Object.keys(t.ledger);
+  if (pids.length <= max) return;
+  const seated = new Set(t.seats.filter((s) => s && !s.bot).map((s) => s.pid));
+  const drop = pids
+    .filter((p) => !seated.has(p))
+    .sort((a, b) => (t.ledger[a].at ?? 0) - (t.ledger[b].at ?? 0))
+    .slice(0, pids.length - max);
+  for (const p of drop) delete t.ledger[p];
 }
 
 /** Called when a socket says hello. */
@@ -138,7 +157,9 @@ export async function handle(t, actor, msg, now) {
       const prev = t.ledger[actor.pid];
       const chips = prev ? prev.chips : t.opts.startChips;
       if (!prev) t.ledger[actor.pid] = { nick: actor.nick, buyIn: t.opts.startChips, chips };
+      t.ledger[actor.pid].at = now;
       t.seats[i] = { pid: actor.pid, nick: actor.nick, chips, bot: false, away: null, leaving: false };
+      pruneLedger(t);
       break;
     }
     case 'stand': {
@@ -272,7 +293,7 @@ export async function tick(t, now) {
 
 /** Next time tick() has something to do (ms epoch). */
 export function nextWake(t) {
-  const times = [t.lastActive + IDLE_EXPIRY_MS];
+  const times = [t.lastActive + idleLimit(t)];
   const h = t.hand;
   if (h && h.phase !== 'done') {
     if (h.deadline) times.push(h.deadline);
@@ -282,8 +303,10 @@ export function nextWake(t) {
   return Math.min(...times);
 }
 
+const idleLimit = (t) => (t.handNo > 0 ? IDLE_EXPIRY_MS : UNUSED_EXPIRY_MS);
+
 export function isExpired(t, now) {
-  return now - t.lastActive >= IDLE_EXPIRY_MS;
+  return now - t.lastActive >= idleLimit(t);
 }
 
 /** Snapshot for one viewer. Never includes other players' private cards or the deck. */

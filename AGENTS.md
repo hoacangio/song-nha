@@ -17,6 +17,7 @@ src/worker.js              HTTP API + WS routing (only /api/* and /ws/* run the 
 src/table/TableDO.js       per-table actor: queue, storage, sockets, alarm, rate limit
 src/table/core.js          plain-data table logic (seats, ledger, hands, timers, snapshots)
 src/table/HostDO.js        per-host table limit (5)
+src/table/quota.js         QuotaDO: table-creation quota per network (IPv4 / IPv6 /64, hashed) + global
 src/table/lobby.js         LobbyDO: public tables for “random table” (code/game/seats/taken/online only)
 src/games/<game>/engine.js game engine (common interface — see README)
 src/lib/protocol.js        message whitelist, validation, nick cleaning, token bucket
@@ -80,7 +81,10 @@ See the table in README → *Security model*. Key invariants with tests:
    at showdown / all-in run-out; a fold-out winner never shows.
 2. A pid can't be chosen by the client (`hello` accepts only `secret` + `nick`); host powers need the host
    secret.
-3. Unknown types/fields, prototype keys, non-integer/negative/overflow amounts, oversized frames and
+3. Storage stays bounded: creation quota (tests/security/storage), 6 h expiry for never-played tables,
+   capped ledger/history, no storage write when nothing changed. Anything new that is stored per table
+   or per client needs a cap and an expiry.
+4. Unknown types/fields, prototype keys, non-integer/negative/overflow amounts, oversized frames and
    wrong origins are rejected.
 
 ## Status / next steps
