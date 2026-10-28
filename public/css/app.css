@@ -776,20 +776,23 @@ code { font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; }
   .learn-panel .course-info { gap: 1px; }
 }
 @media (max-width: 1023px) { .home-head .head-settings { display: none; } }
-@media (min-width: 1024px) { .home .foot { margin-top: 12px; } .home { padding-bottom: 20px; } }
+@media (min-width: 1024px) { .home .foot { margin-top: 10px; } .home { padding-top: 20px; padding-bottom: 12px; } }
 /* sidebar: every tab visible (🎓 Học luật must not hide behind a horizontal scroll) */
 .side .tabs { flex-wrap: wrap; overflow: visible; }
 .side .tab { flex: 1 1 auto; min-height: 38px; padding: 0 10px; }
 .side .tab.close-x { flex: none; position: static; }
 
+/* sheet header (rules, ask-name): title left, ✕ right */
+.learn-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.learn-head h2 { margin: 0; font-size: 17px; }
 /* ---------- course page (/hoc/<game>/<lesson>) ---------- */
 .learn-page {
   height: 100dvh; max-width: 1180px; margin: 0 auto; display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 8px;
   padding: calc(8px + env(safe-area-inset-top)) 12px 0;
 }
-.learn-head { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 4px 8px; }
-.learn-head .course-chips { grid-column: 1 / -1; overflow-x: auto; scrollbar-width: none; }
-.learn-head .course-chips .chip-btn { flex: none; }
+.learn-page .learn-head { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 4px 8px; }
+.learn-page .learn-head .course-chips { grid-column: 1 / -1; overflow-x: auto; scrollbar-width: none; }
+.learn-page .learn-head .course-chips .chip-btn { flex: none; }
 .back-btn { min-height: 40px; padding: 0 10px; font-size: 22px; line-height: 1; gap: 6px; display: inline-flex; align-items: center; }
 .back-txt { display: none; font-size: 14px; font-weight: 600; }
 .learn-title { min-width: 0; display: grid; }
@@ -803,7 +806,7 @@ code { font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; }
 .learn-foot { display: flex; justify-content: flex-end; padding: 6px 0 calc(8px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); }
 @media (max-width: 1023px) {
   .learn-prog { display: none; }
-  .learn-head .course-chips { margin-top: 2px; }
+  .learn-page .learn-head .course-chips { margin-top: 2px; }
 }
 @media (max-height: 700px) and (max-width: 1023px) {
   .learn-title .small { display: none; }
@@ -816,8 +819,8 @@ code { font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; }
     zoom: var(--k); height: calc(100dvh / var(--k)); padding: 24px 32px; gap: 18px;
     grid-template-rows: auto minmax(0, 1fr);
   }
-  .learn-head { grid-template-columns: auto minmax(0, 1fr) auto; gap: 16px; }
-  .learn-head .course-chips { grid-column: auto; overflow: visible; }
+  .learn-page .learn-head { grid-template-columns: auto minmax(0, 1fr) auto; gap: 16px; }
+  .learn-page .learn-head .course-chips { grid-column: auto; overflow: visible; }
   .back-txt { display: inline; }
   .learn-title .small { font-size: 13px; }
   .learn-title h1 { font-size: 26px; }
@@ -842,3 +845,137 @@ code { font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; }
   .learn-foot { padding: 12px 0 16px; }
 }
 .learn-main, .learn-aside, .learn-content, .learn-nav { min-width: 0; }
+
+/* ---------- landscape phones (and short landscape windows below desktop width) ----------
+   Height is the scarce dimension: slimmer bars, felt + controls side by side, two-column home. */
+@media (orientation: landscape) and (max-height: 520px) and (max-width: 1023px) {
+  /* table */
+  .tbar { min-height: 40px; padding: 2px 8px; padding-left: max(8px, env(safe-area-inset-left)); padding-right: max(8px, env(safe-area-inset-right)); }
+  .tbar .btn.icon { min-height: 36px; min-width: 36px; }
+  .tbar > .btn.sm[data-act='invite'] { display: none; } /* the code chip already opens the invite */
+  .code-chip { padding: 3px 8px; }
+  .play { grid-template-rows: minmax(0, 1fr); grid-template-columns: minmax(0, 1fr) clamp(200px, 34vw, 300px); }
+  .felt-wrap { padding: 22px 30px 24px; padding-left: max(30px, env(safe-area-inset-left)); container-type: size; justify-content: center; align-items: center; }
+  .felt { flex: none; width: min(100cqw, 100cqh * 1.9); height: min(100cqh, 100cqw / 1.35); }
+  .dock {
+    border-top: 0; border-left: 1px solid var(--line); align-content: center; overflow-y: auto; gap: 6px;
+    padding: 6px 8px; padding-right: max(8px, env(safe-area-inset-right)); padding-bottom: max(6px, env(safe-area-inset-bottom));
+  }
+  .dock .note { display: none; }
+  .actions { gap: 6px; min-height: 0; }
+  .actions .btn { min-height: 40px; padding: 0 10px; }
+  .actions .btn.grow, .actions .btn.block { flex: 1 1 100%; }
+  .bet-row { flex-wrap: wrap; }
+  .chip-btn { min-height: 34px; }
+  .card.lg { --cw: 44px; }
+  .center-timer { font-size: 18px; }
+  .seat { width: 70px; }
+  .avatar { width: 32px; height: 32px; font-size: 12px; }
+
+  /* Tiến lên: 13 cards need the full width, so its controls stay under the felt (compact). */
+  .game-tienlen .play { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; }
+  .game-tienlen .dock { border-left: 0; border-top: 1px solid var(--line); grid-template-columns: minmax(0, 1fr) auto; align-items: center; padding-top: 2px; }
+  .game-tienlen .dock > :not(.tl-hand):not(.actions) { grid-column: 1 / -1; }
+  .game-tienlen .tl-hand { padding-top: 12px; --cw: min(42px, 7.4cqw); }
+  .game-tienlen .dock .actions { flex-wrap: nowrap; }
+  .game-tienlen .dock .actions .btn { min-height: 38px; white-space: nowrap; }
+  .game-tienlen .felt-wrap { padding-top: 20px; padding-bottom: 22px; }
+  .game-tienlen .felt { width: min(100cqw, 100cqh * 2.6); height: min(100cqh, 100cqw / 2); }
+  /* A flat felt leaves little room in the middle: the top and bottom seats sit on the rail instead,
+     so the trick and the turn line in the centre stay readable. */
+  .game-tienlen .felt-wrap { padding-top: 34px; padding-bottom: 30px; }
+  .game-tienlen .seat.at-top { transform: translate(-50%, -80%); }
+  .game-tienlen .seat.at-bottom { transform: translate(-50%, -18%); }
+  .game-tienlen .seat.at-bottom .who { display: none; }
+  .game-tienlen .center { inset: 24% 20% 18%; }
+
+  /* home: compact header, play tab in two columns, slim bottom bar */
+  .home { max-width: none; padding: 6px 16px calc(52px + env(safe-area-inset-bottom)); padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); }
+  .home-head { margin-bottom: 6px; }
+  .home-head .tagline { display: none; }
+  .brand h1 { font-size: 20px; }
+  .logo { width: 32px; height: 32px; font-size: 18px; border-radius: 9px; }
+  .home-grid.mtab-play { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 10px; align-items: start; }
+  .home-grid.mtab-play .side-col > .panel { margin: 0; }
+  .home-grid > .panel, .side-col > .panel { margin-bottom: 0; }
+  .panel { padding: 10px 12px; }
+  .create h2 { display: none; }
+  .game-pick { min-height: 58px; padding: 6px 4px; gap: 1px; }
+  .gi { font-size: 18px; }
+  .gm { display: none; }
+  .join-h { display: block; margin: 0 0 6px; font-size: 14px; }
+  .home-grid.mtab-recent .panel, .home-grid.mtab-learn .panel { max-width: 720px; margin: 0 auto; }
+  .courses { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .course-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'ico btn' 'info info'; }
+  .course-row .course-ico { grid-area: ico; text-align: left; }
+  .course-row .course-info { grid-area: info; }
+  .course-row .btn { grid-area: btn; }
+  .learn-menu > p { display: none; }
+  .bottom-bar { padding-top: 2px; }
+  .bb-item { min-height: 44px; grid-auto-flow: column; align-items: center; justify-content: center; gap: 6px; font-size: 13px; padding: 4px; }
+  .bb-item span { font-size: 18px; }
+  .bb-item::before { top: -2px; }
+
+  /* course page: lesson list on the left like desktop, two-column lists */
+  .learn-page { padding: 4px 12px 0; padding-left: max(12px, env(safe-area-inset-left)); padding-right: max(12px, env(safe-area-inset-right)); gap: 4px; }
+  .learn-page .learn-head { grid-template-columns: auto minmax(0, 1fr) auto; }
+  .learn-page .learn-head .course-chips { grid-column: auto; margin: 0; }
+  .learn-title .small { display: none; }
+  .learn-title h1 { font-size: 16px; }
+  .learn-main { grid-template-columns: 170px minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); gap: 10px; }
+  .learn-aside { display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 6px; min-height: 0; }
+  .learn-prog { display: grid; }
+  .learn-nav.tabs { flex-direction: column; border: 0; overflow-y: auto; gap: 1px; }
+  .learn-nav .tab { text-align: left; min-height: 34px; padding: 0 10px; border-radius: 8px; border-bottom: 0; border-left: 3px solid transparent; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .learn-nav .tab.on { border-left-color: var(--brand); color: var(--brand); background: color-mix(in srgb, var(--brand) 12%, transparent); }
+  .lesson-h { display: none; }
+  .learn-body .ranks, .learn-body .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 8px; }
+  .learn-body .ranks li { padding: 2px 8px; }
+  .learn-body .ranks summary { min-height: 30px; font-size: 13px; gap: 6px; grid-template-columns: 20px minmax(0, 1fr) auto; }
+  .learn-body .ranks summary > :nth-child(2) { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .learn-body .ranks .rank-no { width: 20px; height: 20px; font-size: 11px; }
+  .learn-body .ranks summary .card.xs { --cw: 17px; }
+  .exam, .exam-intro, .exam-result { gap: 5px; }
+  .q-prompt { margin: 0; }
+  /* rules sheet: three columns and tighter fields so it fits the short screen */
+  .sheet.rules { width: min(760px, 100%); padding: 10px 14px 12px; gap: 6px; }
+  .rules-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px 10px; }
+  .rules-grid input, .rules-grid select { min-height: 36px; padding-top: 4px; padding-bottom: 4px; }
+  .sheet.rules .row .btn { min-height: 40px; }
+  .learn-foot { padding: 4px 0 max(6px, env(safe-area-inset-bottom)); }
+  .learn-foot .btn { min-height: 34px; }
+
+  /* sheets */
+  .overlay { padding: 6px; }
+  .sheet.settings, .sheet.rules { max-height: calc(100dvh - 12px); }
+}
+/* Desktop-width but short windows (tablets in landscape, small laptop windows): drop the decorative hero. */
+/* "Short" = less than ~780 px of height after the --k zoom, so each zoom step has its own threshold. */
+@media (min-width: 1024px) and (max-height: 790px),
+  (min-width: 1440px) and (min-height: 860px) and (max-height: 935px),
+  (min-width: 1680px) and (min-height: 940px) and (max-height: 1075px),
+  (min-width: 2200px) and (min-height: 1180px) and (max-height: 1320px),
+  (min-width: 2800px) and (min-height: 1500px) and (max-height: 1630px) {
+  .hero, .home-head .tagline, .learn-panel .learn-menu > p { display: none; }
+  .home { padding-top: 14px; padding-bottom: 8px; }
+  .home-head { margin-bottom: 12px; }
+  /* the three side panels join the main grid: learn goes under "create" where there is room */
+  .side-col { display: contents; }
+  .home-grid { grid-template-areas: 'create join' 'create recent' 'learn recent'; grid-template-rows: auto auto 1fr; gap: 14px; }
+  .side-col > [data-mtab='play'] { grid-area: join; }
+  .side-col > [data-mtab='recent'] { grid-area: recent; }
+  .learn-panel { grid-area: learn; padding: 14px 16px; }
+  .game-pick { min-height: 84px; padding: 8px; }
+  .learn-panel .courses { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .learn-panel .course-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'ico btn' 'info info'; padding: 8px 10px; }
+  .learn-panel .course-ico { grid-area: ico; text-align: left; }
+  .learn-panel .course-info { grid-area: info; }
+  .learn-panel .course-row .btn { grid-area: btn; }
+  .home .foot { display: none; }
+}
+@media (min-width: 1024px) and (max-height: 640px) {
+  .home { padding-top: 10px; }
+  .home-head { margin-bottom: 8px; }
+  .game-pick { min-height: 74px; }
+  .panel { padding: 14px 16px; }
+}

@@ -20,7 +20,7 @@ no cash-out, no prizes, no ads). Create a private table, share the link or QR co
   60 s seat hold.
 - Session leaderboard (chip change vs. buy-in), host top-up ("rebuy"), hand history with CSV export
   (formula-safe).
-- Mobile-first: the table fits one screen without scrolling on 390×844, 375×667, 360×640 and desktop.
+- Mobile-first: the table fits one screen without scrolling on 390×844, 375×667, 360×640, landscape phones (640×360 → 915×412) and desktop. Portrait and landscape are both allowed (PWA `orientation: any`); in landscape the controls sit beside the felt.
   Sidebar on ≥1024 px, drawer below.
 - Dark theme by default, light option; casino table themes (Las Vegas, Macau, Phú Quốc, Cambodia);
   Ngũ hành accent palette with mệnh by birth year; synthesised sound effects (on by default); Vietnamese/English.

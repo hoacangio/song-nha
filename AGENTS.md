@@ -70,6 +70,11 @@ No page scrolling: the table, home, settings sheet, rules sheet and learn guide 
 (360×640 up to 2560×1400). Long content goes into tabs inside a sheet, not a scrolling page.
 Below 1024px the home page shows one `[data-mtab]` section at a time (play / recent / learn), switched by
 the fixed `.bottom-bar`; at 1024px+ all sections are visible (learn menu in the right column).
+Landscape phones (`orientation: landscape` and height ≤ 520px, width < 1024px) have their own block at the
+end of app.css: felt + controls side by side (Tiến lên keeps its 13-card hand under the felt), two-column
+home, lesson list on the left of the course page. Short desktops (height after `--k` zoom < ~780px) drop the
+hero and move the learn panel under "create". Tests: tests/ui/landscape.spec.mjs. The table screen carries
+`game-<id>` for per-game CSS; seats get `at-top` / `at-bottom` by their position on the oval.
 
 ## Security model
 

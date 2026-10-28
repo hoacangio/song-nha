@@ -30,7 +30,7 @@ export function tableView(app) {
   if (!s) return `<div class="screen">${head}<main class="felt-wrap"><div class="felt"><div class="center"><div class="center-msg">…</div></div></div></main></div>`;
   const gv = GAME_VIEWS[s.game];
   return `
-  <div class="screen ${app.ui.drawer ? 'drawer-open' : ''}">
+  <div class="screen game-${esc(s.game)} ${app.ui.drawer ? 'drawer-open' : ''}">
     ${head}
     <div class="body">
       <main class="play">
@@ -75,7 +75,7 @@ function seatsHtml(app, gv) {
       }
       const isMe = i === me;
       const isTurn = h && h.phase !== 'done' && h.turn === i;
-      const flags = [isMe ? 'me' : '', isTurn ? 'turn' : '', seat.online ? '' : 'off', h?.dealer === i ? 'is-dealer' : ''].join(' ');
+      const flags = [isMe ? 'me' : '', isTurn ? 'turn' : '', seat.online ? '' : 'off', h?.dealer === i ? 'is-dealer' : '', y < 25 ? 'at-top' : y > 75 ? 'at-bottom' : ''].join(' ');
       return `<div class="seat ${flags}" style="${style}" data-seat="${i}">
         <div class="avatar ${seat.bot ? 'bot' : ''}">${initials(seat.nick)}${isTurn ? ringHtml(h.deadline, turnMs, app.skew) : ''}</div>
         <div class="who"><b>${isMe ? esc(t('you')) : esc(seat.nick)}</b><span class="chips ${seat.chips < 0 ? 'down' : ''}">${fmt(seat.chips)}</span></div>
