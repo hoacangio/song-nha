@@ -29,7 +29,8 @@ const root = document.getElementById('app');
 const app = {
   route: { name: 'home' },
   nick: load('sn.nick', ''),
-  lang: load('sn.lang', (navigator.language || 'vi').toLowerCase().startsWith('vi') ? 'vi' : 'en'),
+  // Vietnamese by default for everyone (whatever the browser language); English only once chosen.
+  lang: load('sn.lang', 'vi') === 'en' ? 'en' : 'vi',
   theme: load('sn.theme', 'dark') === 'light' ? 'light' : 'dark',
   tableTheme: ['vegas', 'macau', 'phuquoc', 'cambodia'].includes(load('sn.table', '')) ? load('sn.table', '') : 'vegas',
   accent: normalizeAccent(load('sn.accent', 'terracotta')),
