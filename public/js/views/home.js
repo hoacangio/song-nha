@@ -8,6 +8,8 @@ const GAMES = [
   { id: 'xidach', icon: '21', ready: true },
   { id: 'tienlen', icon: '2♠', ready: true },
   { id: 'holdem', icon: 'A♥', ready: true },
+  { id: 'maubinh', icon: '13', ready: true },
+  { id: 'tichu', icon: '龍', ready: true },
 ];
 
 /** Recent tables per page: fewer on short screens so the home page never scrolls. */
@@ -133,7 +135,7 @@ export function rulesFields(app) {
 }
 
 /** Option groups shown as tabs in the rules sheet (fieldset[data-g]); the rest is "general". */
-export const RULE_GROUPS = { xidach: ['payouts'], tienlen: ['chop', 'instant', 'points'], holdem: [] };
+export const RULE_GROUPS = { xidach: ['payouts'], tienlen: ['chop', 'instant', 'points'], holdem: [], maubinh: ['score', 'bonus', 'special'], tichu: ['points'] };
 
 export function rulesView(app) {
   const h = app.home;

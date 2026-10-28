@@ -1,6 +1,7 @@
 // Learn menu placement: mobile bottom bar tabs (Chơi / Gần đây / Học luật / ⚙), desktop right column,
 // and a 🎓 tab in the table sidebar. Every state fits without scrolling.
 import { test, expect } from '@playwright/test';
+import { COURSE_IDS } from '../../public/js/learn/index.js';
 
 const fits = (page) => page.evaluate(() => document.documentElement.scrollHeight - innerHeight);
 
@@ -23,7 +24,7 @@ test('mobile bottom bar switches home sections and opens the learn menu', async 
 
   await bar.locator('[data-v=learn]').click();
   await expect(bar.locator('[data-v=learn]')).toHaveClass(/on/);
-  await expect(page.locator('.learn-menu .course-row')).toHaveCount(3);
+  await expect(page.locator('.learn-menu .course-row')).toHaveCount(COURSE_IDS.length);
   expect(await fits(page)).toBeLessThanOrEqual(0);
   await page.click('.learn-menu [data-act=learnOpen][data-game=tienlen]');
   await expect(page.locator('[data-act=learnGame][data-v=tienlen]')).toHaveClass(/on/);
@@ -41,7 +42,7 @@ test('desktop: learn menu in the right column, no bottom bar; table sidebar has 
   const page = await ctx.newPage();
   await page.goto('/');
   await expect(page.locator('.bottom-bar')).toBeHidden();
-  await expect(page.locator('.side-col .learn-menu .course-row')).toHaveCount(3);
+  await expect(page.locator('.side-col .learn-menu .course-row')).toHaveCount(COURSE_IDS.length);
   await expect(page.locator('#nick')).toBeVisible();
   expect(await fits(page)).toBeLessThanOrEqual(0);
 
@@ -49,7 +50,7 @@ test('desktop: learn menu in the right column, no bottom bar; table sidebar has 
   await page.click('[data-act=createTable]');
   await expect(page.locator('.code-chip')).toBeVisible();
   await page.click('.tabs [data-act=tab][data-v=learn]');
-  await expect(page.locator('.tab-body .learn-menu .course-row')).toHaveCount(3);
+  await expect(page.locator('.tab-body .learn-menu .course-row')).toHaveCount(COURSE_IDS.length);
   await page.click('.tab-body [data-act=learnOpen][data-game=holdem]');
   await expect(page.locator('[data-act=learnGame][data-v=holdem]')).toHaveClass(/on/);
   expect(await fits(page)).toBeLessThanOrEqual(0);

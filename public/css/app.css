@@ -999,7 +999,10 @@ code { font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; }
   .side-col > [data-mtab='recent'] { grid-area: recent; }
   .learn-panel { grid-area: learn; padding: 14px 16px; }
   .game-pick { min-height: 84px; padding: 8px; }
-  .learn-panel .courses { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .learn-panel .courses { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+  .learn-panel .course-info .small { display: none; }
+  .learn-panel .course-row .btn { min-height: 30px; padding: 0 8px; }
+  .create .gm { display: none; }
   .learn-panel .course-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'ico btn' 'info info'; padding: 8px 10px; }
   .learn-panel .course-ico { grid-area: ico; text-align: left; }
   .learn-panel .course-info { grid-area: info; }
@@ -1011,4 +1014,98 @@ code { font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; }
   .home-head { margin-bottom: 8px; }
   .game-pick { min-height: 74px; }
   .panel { padding: 14px 16px; }
+}
+
+/* ---------- Tichu special cards ---------- */
+.card.special { color: #fff; border-color: rgb(0 0 0 / 0.25); }
+.card.special .cs { margin: 10% 0 0 0; font-size: calc(var(--cw) * 0.52); font-weight: 700; }
+.card.special .ci { font-size: calc(var(--cw) * 0.28); }
+.card.sp-MJ { background: linear-gradient(160deg, #2f8f5b, #17633b); }
+.card.sp-DG { background: linear-gradient(160deg, #8a6a45, #5d4128); }
+.card.sp-PH { background: linear-gradient(160deg, #f08a2c, #c2410c); }
+.card.sp-DR { background: linear-gradient(160deg, #c81e3a, #7f1020); }
+.card.special.sm .cs, .card.special.xs .cs { display: block; margin: 0; font-size: calc(var(--cw) * 0.62); }
+.card.special.sm .ci, .card.special.xs .ci { display: none; }
+
+/* ---------- Mậu binh ---------- */
+.mb-rows { display: grid; gap: 4px; container-type: inline-size; }
+.mb-row { display: grid; grid-template-columns: 74px minmax(0, 1fr); align-items: center; gap: 6px; }
+.mb-label { display: grid; line-height: 1.15; font-size: 11px; color: var(--muted); }
+.mb-label b { font-size: 12px; color: var(--ink); }
+.mb-label .mb-wl { font-variant-numeric: tabular-nums; }
+.mb-cards { display: flex; justify-content: flex-start; }
+.mb-cards .card { --cw: min(46px, 13cqw); font: inherit; padding: 0; cursor: pointer; transition: transform 120ms ease, box-shadow 120ms ease; touch-action: manipulation; }
+.mb-cards .card + .card { margin-left: 3px; }
+.mb-cards .card.sel { transform: translateY(-8px); box-shadow: 0 0 0 2px var(--brand), 0 6px 12px rgb(0 0 0 / 0.35); }
+.mb-rows.locked .mb-cards .card { cursor: default; }
+.mb-rows.lung .mb-row { outline: 1px dashed var(--down); outline-offset: 2px; border-radius: 8px; }
+.mb-status { min-height: 20px; text-align: center; }
+.mb-mini { display: grid; gap: 1px; }
+.mb-mini-row { display: flex; justify-content: center; }
+.mb-mini-row .card { --cw: 15px; }
+.mb-mini-row .card + .card { margin-left: -5px; }
+@media (max-height: 700px) { .mb-cards .card { --cw: min(40px, 12cqw); } .mb-rows { gap: 2px; } }
+
+/* ---------- Tichu ---------- */
+.badge.team { background: color-mix(in srgb, var(--brand) 22%, var(--surface)); color: var(--ink); }
+.tc-call { border-color: #f1c24c; color: #f1c24c; font-weight: 800; }
+.tc-slots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.tc-slot { display: grid; justify-items: center; gap: 2px; padding: 4px; border-radius: 10px; border: 1px dashed var(--line); background: var(--bg); color: var(--ink); cursor: pointer; font: inherit; }
+.tc-slot:disabled { cursor: default; opacity: 0.8; }
+.tc-slot .card { --cw: 26px; }
+.tc-empty { display: grid; place-items: center; width: 26px; height: 36px; border-radius: 4px; border: 1px dashed var(--line); color: var(--muted); }
+.tc-wish { display: grid; gap: 2px; font-size: 12px; }
+.tc-wish select { min-height: 40px; border-radius: 10px; padding: 0 8px; background: var(--bg); color: var(--ink); border: 1px solid var(--line); }
+.tc-received { text-align: center; display: flex; flex-wrap: wrap; gap: 6px 10px; justify-content: center; align-items: center; }
+.tc-rcv { display: inline-flex; align-items: center; gap: 4px; }
+.tc-score { font-size: 12px; }
+.game-tichu .tl-hand { --cw: min(50px, 13.5cqw); }
+@media (max-height: 700px) { .game-tichu .tl-hand { --cw: min(44px, 13.5cqw); } }
+
+/* five games in the picker */
+.games { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.game-pick .gn { line-height: 1.15; }
+@media (max-width: 1023px) {
+  .game-pick { min-height: 64px; padding: 6px 2px; }
+  .game-pick .gn { font-size: 12px; }
+  .game-pick .gm { display: none; }
+}
+.game-maubinh .seat-x { flex-direction: column; gap: 2px; }
+.game-maubinh .seat.at-top .seat-x { flex-direction: row; }
+@media (orientation: landscape) and (max-height: 520px) and (max-width: 1023px) {
+  /* exams: question groups side by side; definitions in two columns */
+  .q-groups { grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); }
+  .q-group { grid-column: auto; }
+  .learn-body .defs { columns: 2; column-gap: 18px; }
+  .learn-body .defs dt { break-after: avoid; }
+  .learn-body .defs dd { break-inside: avoid; }
+  .learn-body .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .courses { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+  .course-row { padding: 6px 8px; gap: 4px 6px; }
+  .course-row .btn { min-height: 32px; padding: 0 8px; }
+  .course-ico { font-size: 18px; }
+  .course-info .small { display: none; }
+}
+.q-group.inline { display: grid; grid-template-columns: 64px minmax(0, 1fr); align-items: center; gap: 6px; padding: 4px 8px; }
+.q-group.inline .rank-cards { margin-top: 0; }
+@media (orientation: landscape) and (max-height: 520px) and (max-width: 1023px) {
+  .rules-grid .group.pts { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .q-group.inline { grid-template-columns: minmax(0, 1fr); }
+}
+@media (min-width: 1024px) {
+  .q-groups:has(.q-group.inline) { grid-template-columns: 5fr 5fr 3fr; }
+  .q-group.inline { grid-column: auto; grid-template-columns: minmax(0, 1fr); }
+}
+@media (orientation: landscape) and (max-height: 520px) and (max-width: 1023px) {
+  .q-options:not(.grid2) { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 6px; }
+  .q-options .btn.opt { min-height: 38px; }
+  .learn-body .defs dt { font-size: 14px; margin-top: 4px; }
+  .learn-body .defs dd { font-size: 12.5px; line-height: 1.3; }
+}
+@media (orientation: landscape) and (max-height: 380px) and (max-width: 1023px) {
+  .learn-body > .rank-cards { display: none; } /* very short screens: the text above already names each card */
+}
+@media (min-width: 1024px) and (max-height: 640px) {
+  .learn-page { padding: 14px 32px; gap: 12px; }
+  .learn-content { padding: 16px 24px 0; }
 }

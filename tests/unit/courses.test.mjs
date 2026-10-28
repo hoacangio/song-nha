@@ -5,6 +5,8 @@ import { classify, compareHands, XIDACH_DEFAULTS } from '../../public/js/domain/
 import { detectCombo, canBeat, TIENLEN_DEFAULTS } from '../../public/js/domain/tienlen.js';
 import { bestHand } from '../../public/js/domain/holdem.js';
 import { isCardList } from '../../public/js/domain/cards.js';
+import { isTichuCardList, detectCombo as tcDetect, canBeat as tcBeat, pointsOf } from '../../public/js/domain/tichu.js';
+import { evaluate as mbEval, compare as mbCompare, judge as mbJudge } from '../../public/js/domain/maubinh.js';
 
 /** Deterministic PRNG (mulberry32) so failures are reproducible. */
 function rng(seed) {
@@ -40,7 +42,7 @@ test('exams: 10 well-formed questions, answer among the options, distinct cards'
           assert.ok(vs.includes(q.answer), `${id} answer not in options: ${q.prompt}`);
           assert.ok(q.options.length >= 2 && q.options.length <= 4);
           const all = q.groups.flatMap((g) => g.cards);
-          assert.ok(isCardList(all, 52), `${id} cards: ${all}`);
+          assert.ok(id === 'tichu' ? isTichuCardList(all, 56) : isCardList(all, 52), `${id} cards: ${all}`);
         }
       }
     }
@@ -102,4 +104,31 @@ test('completion needs every lesson and a passing score', () => {
   const p = normalizeProgress({ xidach: { seen: ['goal', 5], best: 99 }, __proto__: null });
   assert.deepEqual(p.xidach, { seen: ['goal'], best: EXAM_SIZE, passedAt: null });
   assert.deepEqual(p.holdem, { seen: [], best: 0, passedAt: null });
+});
+
+test('Mậu binh exam answers agree with the rule engine', () => {
+  for (let seed = 1; seed <= 300; seed++) {
+    for (const q of COURSES.maubinh.exam('vi', rng(seed))) {
+      if (q.groups.length === 1 && q.groups[0].cards.length === 5) assert.equal(q.answer, String(mbEval(q.groups[0].cards).cat));
+      if (q.groups.length === 2) {
+        const r = mbCompare(mbEval(q.groups[0].cards), mbEval(q.groups[1].cards));
+        assert.equal(q.answer, r > 0 ? 'a' : r < 0 ? 'b' : 'tie');
+      }
+      if (q.groups.length === 3) assert.equal(q.answer, mbJudge(q.groups.flatMap((g) => g.cards)).valid ? 'ok' : 'lung');
+    }
+  }
+});
+
+test('Tichu exam answers agree with the rule engine', () => {
+  for (let seed = 1; seed <= 300; seed++) {
+    for (const q of COURSES.tichu.exam('en', rng(seed))) {
+      if (!q.groups.length) continue;
+      if (q.groups.length === 2) {
+        const a = tcDetect(q.groups[0].cards);
+        const b = tcDetect(q.groups[1].cards, a);
+        assert.equal(q.answer, tcBeat(a, b) ? 'yes' : 'no');
+      } else if (/points/.test(q.prompt)) assert.equal(q.answer, String(pointsOf(q.groups[0].cards)));
+      else assert.equal(q.answer, tcDetect(q.groups[0].cards)?.type ?? 'invalid');
+    }
+  }
 });

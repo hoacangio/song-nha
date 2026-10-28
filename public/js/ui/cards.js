@@ -2,6 +2,16 @@
 import { isCard, isRed, rankLabel, suitGlyph } from '../domain/cards.js';
 import { oneShot } from '../lib/motion.js';
 import { esc } from '../lib/esc.js';
+import { getLang } from '../lib/i18n.js';
+
+/** Tichu's four special cards: corner mark, centre glyph, names. */
+const SPECIAL = {
+  MJ: { mark: '1', glyph: '雀', vi: 'Mạt chược', en: 'Mah Jong' },
+  DG: { mark: '0', glyph: '犬', vi: 'Chó', en: 'Dog' },
+  PH: { mark: '½', glyph: '鳳', vi: 'Phượng', en: 'Phoenix' },
+  DR: { mark: '★', glyph: '龍', vi: 'Rồng', en: 'Dragon' },
+};
+export const specialName = (c) => SPECIAL[c]?.[getLang() === 'en' ? 'en' : 'vi'] ?? '';
 
 const backKeys = new Set();
 
@@ -19,6 +29,16 @@ export function cardHtml(card, { key = '', size = 'md', deal = 0, extra = '', ta
     if (card && backKeys.has(key)) anim = oneShot(`${key}:flip`, 'flip', 450);
     else anim = oneShot(key, 'deal', 380, deal);
     if (!card) backKeys.add(key);
+  }
+  if (card && SPECIAL[card]) {
+    const sp = SPECIAL[card];
+    const tag = tap ? 'button' : 'div';
+    const act = tap ? ` type="button" data-act="${esc(tap)}" aria-pressed="${extra.includes('sel')}"` : '';
+    return (
+      `<${tag} class="card special sp-${card} ${size} ${anim.cls} ${extra}" style="${anim.style}" data-card="${card}" ` +
+      `aria-label="${esc(specialName(card))}" title="${esc(specialName(card))}"${act}>` +
+      `<span class="ci">${sp.mark}</span><span class="cs">${sp.glyph}</span></${tag}>`
+    );
   }
   if (!card || !isCard(card)) {
     return `<div class="card back ${size} ${anim.cls} ${extra}" style="${anim.style}" aria-label="card"></div>`;

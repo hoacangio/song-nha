@@ -27,13 +27,21 @@ export const CLIENT_MESSAGES = Object.freeze({
   kick: ['seat'],
   deleteTable: [],
   // Reserved for later games (validated by their engines):
-  play: ['cards'],
   pass: [],
   fold: [],
   check: [],
   call: [],
   raise: ['amount'],
   allin: [],
+  // Mậu binh
+  arrange: ['cards'],
+  unready: [],
+  // Tichu
+  play: ['cards', 'wish'],
+  grand: ['call'],
+  tichu: [],
+  exchange: ['cards'],
+  giveDragon: ['seat'],
 });
 
 export const own = (o, k) => o !== null && typeof o === 'object' && Object.prototype.hasOwnProperty.call(o, k);

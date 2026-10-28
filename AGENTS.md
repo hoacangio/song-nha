@@ -21,7 +21,7 @@ src/table/quota.js         QuotaDO: table-creation quota per network (IPv4 / IPv
 src/table/lobby.js         LobbyDO: public tables for “random table” (code/game/seats/taken/online only)
 src/games/<game>/engine.js game engine (common interface — see README)
 src/lib/protocol.js        message whitelist, validation, nick cleaning, token bucket
-public/js/domain/          pure rules shared with the client (cards, shuffle, xidach, tienlen, holdem, fengshui)
+public/js/domain/          pure rules shared with the client (cards, shuffle, xidach, tienlen, holdem, maubinh, tichu, fengshui)
 public/js/App.js           state, router, render loop, actions, socket handling
 public/js/views/           (app) => HTML string; game views registered in views/games.js GAME_VIEWS
                            routes: / (home), /t/CODE (table), /hoc/GAME[/TAB] (course page, views/learn.js learnPage)
@@ -83,7 +83,9 @@ See the table in README → *Security model*. Key invariants with tests:
 1. Other players' cards appear in a viewer's snapshot only after that hand is settled or the hand is over
    (Xì dách dealer cards only after the dealer has checked someone; Tiến lên hands only at the end).
    Tiến lên's "must include 3♠" hint is sent to the leader only. Hold'em hole cards: owner only, live hands
-   at showdown / all-in run-out; a fold-out winner never shows.
+   at showdown / all-in run-out; a fold-out winner never shows. Mậu binh: cards and layouts owner-only until
+   the reveal. Tichu: only 8 cards during Grand Tichu, passed cards revealed only to their receiver after all
+   four passed (tests/security/newgames).
 2. A pid can't be chosen by the client (`hello` accepts only `secret` + `nick`); host powers need the host
    secret.
 3. Storage stays bounded: creation quota (tests/security/storage), 6 h expiry for never-played tables,
@@ -100,4 +102,7 @@ See the table in README → *Security model*. Key invariants with tests:
 - Courses for every game with generated exams and PNG certificates: done (tests/unit/courses, tests/ui/learn).
 - Random table for public tables (host opt-in, LobbyDO): done.
 - Learn menu: desktop right column + table sidebar tab, mobile bottom bar (tests/ui/nav): done.
+- Step 4 (Mậu binh: simultaneous arranging, chi bonuses, sập / sập làng, binh lủng, special hands, arranger bot): done.
+- Step 5 (Tichu: 56-card deck, Grand Tichu, passing, wish, Phoenix, Dog, Dragon gift, out-of-turn bombs,
+  double victory, match score, bots): done. Engines may declare `meta.deck` (core shuffles that deck).
 - Commit `package-lock.json` once dependencies are installed with network access, then switch CI to `npm ci`.

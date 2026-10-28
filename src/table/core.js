@@ -112,7 +112,7 @@ async function startHand(t, now) {
   const eng = engineOf(t);
   if (!eng.canStart(t)) err('cannot_start');
   const seed = randomHex(32);
-  const deck = shuffle([...DECK]);
+  const deck = shuffle([...(eng.meta.deck ?? DECK)]); // Tichu adds four special cards
   const commit = await commitment(seed, deck);
   t.handNo += 1;
   t.fair = { handNo: t.handNo, commit, seed, deck: deck.slice() };

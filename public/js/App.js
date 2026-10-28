@@ -19,6 +19,9 @@ import { GAME_VIEWS } from './views/games.js';
 import { selectionState } from './views/tienlen.js';
 import { clampRaise } from './views/holdem.js';
 import { suggestPlay, sortCards } from './domain/tienlen.js';
+import { bestArrangement, sortForArrange } from './domain/maubinh.js';
+import { botExchange, botPlay, sortTichu } from './domain/tichu.js';
+import { tichuSelection } from './views/tichu.js';
 import { forgetMotion } from './lib/motion.js';
 import { ACCENTS, normalizeAccent, isBirthYear, suggestedAccent, menhOf } from './domain/fengshui.js';
 import { sfx, cuesFor, setSoundEnabled, setVolume, unlock as unlockAudio } from './ui/sfx.js';
@@ -352,7 +355,15 @@ function onSocketMessage(m) {
     if (prevHand !== m.handNo) {
       app.ui.bet = null;
       app.ui.sel = new Set();
+      app.ui.mb = null;
+      app.ui.give = [];
     }
+    // Mậu binh: my local layout starts from what I submitted, or my cards sorted high → low.
+    const mine = m.game === 'maubinh' ? m.hand?.seats?.[m.you.seat] : null;
+    if (mine && m.hand.phase !== 'done' && (mine.cards || mine.arr) && !app.ui.mb) {
+      app.ui.mb = { order: mine.arr ?? sortForArrange(mine.cards), pick: null };
+    }
+    if (m.game === 'tichu' && m.hand?.phase !== 'exchange') app.ui.give = [];
     tb.prevTurn = myTurn;
     // First snapshot after joining: take a free seat automatically (spectate when full).
     if (!tb.autoSat) {
@@ -709,6 +720,88 @@ export const actions = {
     a.remove();
   },
   handHelp: () => actions.learnOpen({ game: 'holdem', tab: 'rankings' }),
+  // Mậu binh: tap a card, then another to swap them (across chi too)
+  mbTap: (d) => {
+    const mb = app.ui.mb;
+    if (!mb) return;
+    if (!mb.pick) mb.pick = d.card;
+    else if (mb.pick === d.card) mb.pick = null;
+    else {
+      const i = mb.order.indexOf(mb.pick);
+      const j = mb.order.indexOf(d.card);
+      if (i >= 0 && j >= 0) [mb.order[i], mb.order[j]] = [mb.order[j], mb.order[i]];
+      mb.pick = null;
+    }
+    render();
+  },
+  mbAuto: () => {
+    const s = app.table?.state;
+    const mine = s?.hand?.seats?.[s.you.seat]?.cards;
+    if (!mine || !app.ui.mb) return;
+    app.ui.mb = { order: bestArrangement(mine, s.opts.game), pick: null };
+    render();
+  },
+  mbSubmit: () => {
+    if (app.ui.mb) send({ t: 'arrange', cards: app.ui.mb.order.slice() });
+  },
+  mbEdit: () => send({ t: 'unready' }),
+  // Tichu
+  tcGrand: (d) => send({ t: 'grand', call: d.v === '1' }),
+  tcTichu: () => send({ t: 'tichu' }),
+  tcGiveTap: (d) => {
+    if (!d.card) return;
+    const give = (app.ui.give ||= []);
+    const i = give.indexOf(d.card);
+    if (i >= 0) give[i] = null;
+    else {
+      const free = [0, 1, 2].find((k) => !give[k]);
+      if (free == null) return;
+      give[free] = d.card;
+    }
+    render();
+  },
+  tcGiveHint: () => {
+    const s = app.table?.state;
+    const mine = s?.hand?.seats?.[s.you.seat]?.cards;
+    if (!mine) return;
+    app.ui.give = botExchange(mine);
+    render();
+  },
+  tcGive: () => {
+    const g = app.ui.give || [];
+    if (g.filter(Boolean).length === 3) send({ t: 'exchange', cards: g.slice(0, 3) });
+  },
+  tcPlay: () => {
+    const st = tichuSelection(app);
+    if (!st.ok) return;
+    const msg = { t: 'play', cards: sortTichu([...app.ui.sel]) };
+    const w = Number(document.getElementById('tcWish')?.value);
+    if (st.mj && Number.isInteger(w) && w >= 2 && w <= 14) msg.wish = w;
+    send(msg);
+  },
+  tcHint: () => {
+    const s = app.table?.state;
+    const h = s?.hand;
+    const me = s?.you.seat;
+    const mine = h?.seats?.[me]?.cards;
+    if (!mine) return;
+    const pIdx = h.players.indexOf(me);
+    const partner = h.players[(pIdx + 2) % 4];
+    const opp = [h.players[(pIdx + 1) % 4], h.players[(pIdx + 3) % 4]].filter((p) => h.seats[p].count > 0);
+    const pick = botPlay(mine, {
+      prev: h.trick?.combo ?? null,
+      wish: h.wish,
+      partnerOwns: false, // a hint always looks for a play
+      partnerOut: h.seats[partner].count === 0,
+      partnerCount: h.seats[partner].count,
+      oppMinCount: opp.length ? Math.min(...opp.map((p) => h.seats[p].count)) : 99,
+      myCount: mine.length,
+    });
+    app.ui.sel = new Set(pick?.cards || []);
+    if (!pick) toast(t('tl_noPlay'));
+    render();
+  },
+  tcDragon: (d) => send({ t: 'giveDragon', seat: Number(d.seat) }),
   // Tiến lên
   toggleCard: (d) => {
     const sel = (app.ui.sel ||= new Set());

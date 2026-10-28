@@ -11,7 +11,8 @@ no cash-out, no prizes, no ads). Create a private table, share the link or QR co
 
 ## Features
 
-- Private tables with codes like `SEN-123`, invite dialog with QR code (dependency-free encoder) and full screen.
+- Five games: Xì dách, Tiến lên miền Nam, Texas Hold'em, Mậu binh and Tichu.
+- Private tables with codes like `SEN-1234`, invite dialog with QR code (dependency-free encoder) and full screen.
 - Optional public tables: the host may let strangers join via “🎲 random table”.
 - Bots for empty seats (host adds/removes them) — handy for testing and for two-person games.
 - Server-authoritative rules, dealing, timers and payouts; per-player views (no one ever receives
@@ -79,7 +80,12 @@ WebSocket at `/ws/<CODE>`. Client → server messages are JSON objects with a `t
 | `bet` | `amount` | player | Xì dách, integer within `[minBet, min(maxBet, chips)]` |
 | `hit` / `stay` | | player or dealer | `stay` needs ≥ `playerMin` (đủ tuổi) |
 | `xet` / `xetAll` | `seat` | dealer | only once the dealer has ≥ `dealerMin` |
-| `play` | `cards` | player | Tiến lên: 1–13 distinct card ids from your hand forming a combo that beats the table |
+| `play` | `cards`, `wish?` | player | Tiến lên / Tichu: distinct card ids from your hand forming a combo that beats the table. Tichu: bombs may be sent out of turn; `wish` (2–14) only with the Mah Jong |
+| `arrange` / `unready` | `cards` / – | player | Mậu binh: lock in 13 cards in order (chi đầu 5, chi giữa 5, chi cuối 3) / unlock to change |
+| `grand` | `call` | player | Tichu: Grand Tichu decision on the first 8 cards (boolean) |
+| `tichu` | | player | Tichu: call Tichu before playing your first card |
+| `exchange` | `cards` | player | Tichu: 3 cards, to the next player, partner, previous player |
+| `giveDragon` | `seat` | player | Tichu: who receives a trick won with the Dragon (an opponent) |
 | `pass` | | player | Tiến lên: not allowed when you lead the round |
 | `fold` / `check` / `call` / `allin` | | player | Hold'em |
 | `raise` | `amount` | player | Hold'em: total to raise *to*; ≥ current bet + last raise unless all-in |
@@ -156,6 +162,38 @@ free seat and at least one human online, falling back to any game.
 | Timer | Timeout: check if possible, otherwise fold |
 | Beginner course | See *Courses & certificates* below |
 
+## Rules — Mậu binh (defaults; all are host options)
+
+| Rule | Default |
+| --- | --- |
+| Players / cards | 2–4 players, 13 cards each; everyone arranges at the same time (90 s, then auto-arrange) |
+| Three hands | Chi đầu (5, strongest) ≥ chi giữa (5) ≥ chi cuối (3; only trips, pair or high card count). Otherwise *binh lủng* |
+| Ranks | Poker ranks; suits never break ties; A-2-3-4-5 is the second-highest straight (option: lowest) |
+| Comparing | Each pair of players compares chi by chi: 1 chi per win, ties 0 |
+| Bonus chi | Back: straight flush 5, quads 4 · middle: straight flush 10, quads 8, full house 2 · front: trips 3 |
+| Sập 3 chi | Winning all three against a player ×2; *sập làng* (sweeping every opponent, 3+ players) ×2 again |
+| Binh lủng | Loses every chi to every non-fouled player and counts as a sweep |
+| Mậu binh (instant) | Sảnh rồng 24, đồng hoa (13 one colour) 12, lục phé bôn 3, ba thùng 3, ba sảnh 3 chi from each opponent (0 = off); detected automatically; the higher kind wins between two |
+| Chips | chi × 10 chips (host option) |
+| Privacy | Your cards and layout never leave the server until everyone is revealed; readiness is public |
+
+## Rules — Tichu (defaults; all are host options)
+
+| Rule | Default |
+| --- | --- |
+| Players | Exactly 4; partners sit opposite (seats 1 & 3 vs 2 & 4). 56 cards: 2 → A plus Mah Jong, Dog, Phoenix, Dragon |
+| Grand Tichu | Decided on the first 8 cards (±200); the other 6 stay on the server until all four decided |
+| Passing | One card to each other player, revealed only after all four passed (a card received is shown only to its receiver) |
+| Tichu | ±100, any time before playing your first card |
+| Leading | The Mah Jong holder; the Mah Jong may wish for a rank (2–A): the next players must play it when they can with a normal play (bombs are never compulsory) |
+| Combinations | Single, pair, triple, full house, straight (5+, Mah Jong as 1), consecutive pairs (2+); the Phoenix is wild except in bombs, as a single ½ above the last single |
+| Bombs | Four of a kind; straight flush (5+, beats four of a kind, longer beats shorter). Can be played out of turn on any trick |
+| Turns | Passing does not stop you playing later in the same trick; three passes in a row end it. Dog: lead only, gives the lead to the partner. Dragon trick: given to an opponent of the winner's choice |
+| End | Three players out, or partners out 1st and 2nd (double victory: 200, card points ignored) |
+| Scoring | 5 = 5, 10/K = 10, Dragon +25, Phoenix −25. Last player's hand → opponents, their tricks → the first player out. Match to 1000 |
+| Chips | Per hand: each player of the team behind pays one opponent (point difference ÷ 10) × 10 chips |
+| Timer | Undecided Grand Tichu = no; passing auto-picks; on your turn: pass (or the forced wish play), when leading the lowest play |
+
 ## Courses & certificates
 
 Every game has a short course. The learn menu (course list with progress and 🏅) lives in its own place:
@@ -170,6 +208,8 @@ to it). “?” next to Hold'em cards opens the hand-ranking lesson. Each course
 | Xì dách | goal, counting, special hands, turns & dealer, payouts | how a hand counts, player vs dealer, payout + knowledge questions |
 | Tiến lên | card order, combinations, turns, chopping 2s, end & scoring | what combination, can it beat the table, chop rules + knowledge questions |
 | Hold'em | hand rankings, how a hand works, actions & side pots, tips | who wins at showdown, best five-card hand + knowledge questions |
+| Mậu binh | three hands, hand ranks, scoring, special hands, tips | what hand, which chi wins, valid or fouled layout + knowledge questions |
+| Tichu | the deck, combinations, deal & pass, playing, scoring, tips | what combination, can it beat the table, trick points + knowledge questions |
 
 Each exam has 10 questions; 8 correct passes. Opening every lesson and passing the exam unlocks a
 certificate drawn on a canvas on the device (name, course, score, date, an ID = SHA-256 of those fields)

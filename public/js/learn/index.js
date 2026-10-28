@@ -2,9 +2,11 @@
 import * as xidach from './xidach.js';
 import * as tienlen from './tienlen.js';
 import * as holdem from './holdem.js';
+import * as maubinh from './maubinh.js';
+import * as tichu from './tichu.js';
 import { EXAM_SIZE, PASS_SCORE } from './common.js';
 
-export const COURSES = { xidach, tienlen, holdem };
+export const COURSES = { xidach, tienlen, holdem, maubinh, tichu };
 export const COURSE_IDS = Object.keys(COURSES);
 export { EXAM_SIZE, PASS_SCORE };
 

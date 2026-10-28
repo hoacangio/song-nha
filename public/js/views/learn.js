@@ -8,8 +8,8 @@ import { COURSES, COURSE_IDS, EXAM_SIZE, PASS_SCORE, isComplete, lessonsDone, le
 const S = {
   vi: {
     title: 'Học luật chơi bài',
-    games: { xidach: 'Xì dách', tienlen: 'Tiến lên', holdem: "Hold'em" },
-    icons: { xidach: '21', tienlen: '2♠', holdem: 'A♥' },
+    games: { xidach: 'Xì dách', tienlen: 'Tiến lên', holdem: "Hold'em", maubinh: 'Mậu binh', tichu: 'Tichu' },
+    icons: { xidach: '21', tienlen: '2♠', holdem: 'A♥', maubinh: '13', tichu: '龍' },
     menuTitle: '🎓 Học luật chơi bài',
     menuSub: 'Học từng game, làm bài kiểm tra và nhận chứng chỉ.',
     progress: (d, n, b) => `${d}/${n} bài · kiểm tra ${b}/${EXAM_SIZE}`,
@@ -49,8 +49,8 @@ const S = {
   },
   en: {
     title: 'Learn the games',
-    games: { xidach: 'Xì dách', tienlen: 'Tiến lên', holdem: "Hold'em" },
-    icons: { xidach: '21', tienlen: '2♠', holdem: 'A♥' },
+    games: { xidach: 'Xì dách', tienlen: 'Tiến lên', holdem: "Hold'em", maubinh: 'Mậu binh', tichu: 'Tichu' },
+    icons: { xidach: '21', tienlen: '2♠', holdem: 'A♥', maubinh: '13', tichu: '龍' },
     menuTitle: '🎓 Learn the games',
     menuSub: 'Learn each game, take the exam and earn a certificate.',
     progress: (d, n, b) => `${d}/${n} lessons · exam ${b}/${EXAM_SIZE}`,
@@ -152,7 +152,7 @@ function examBody(app, game) {
   const groups = q.groups.length
     ? `<div class="q-groups">${q.groups
         .map(
-          (g) => `<div class="q-group ${g.half ? 'half' : ''}"><div class="small muted">${esc(g.label)}</div>
+          (g) => `<div class="q-group ${g.half ? 'half' : ''} ${g.inline ? 'inline' : ''}"><div class="small muted">${esc(g.label)}</div>
             <div class="rank-cards">${g.cards.map((c) => cardHtml(c, { size: 'md', extra: hl?.has(c) ? 'in-best' : '' })).join('')}</div></div>`,
         )
         .join('')}</div>`
