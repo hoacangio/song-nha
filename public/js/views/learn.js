@@ -30,6 +30,10 @@ const S = {
     needExam: `Đạt bài kiểm tra (≥ ${PASS_SCORE}/${EXAM_SIZE})`,
     toExam: 'Làm bài kiểm tra',
     name: 'Tên trên chứng chỉ',
+    askName: 'Bạn tên gì?',
+    askNameHelp: 'Tên này sẽ in trên chứng chỉ và cũng là tên của bạn khi vào bàn. Bạn có thể đổi sau.',
+    namePh: 'Ví dụ: Hòa',
+    makeFirst: 'Lưu tên & tạo chứng chỉ',
     make: 'Cập nhật',
     download: 'Tải chứng chỉ (PNG)',
     making: 'Đang tạo chứng chỉ…',
@@ -59,6 +63,10 @@ const S = {
     needExam: `Pass the exam (≥ ${PASS_SCORE}/${EXAM_SIZE})`,
     toExam: 'Take the exam',
     name: 'Name on the certificate',
+    askName: 'What is your name?',
+    askNameHelp: 'It is printed on the certificate and is also your name at the tables. You can change it later.',
+    namePh: 'e.g. Hoa',
+    makeFirst: 'Save name & create certificate',
     make: 'Update',
     download: 'Download certificate (PNG)',
     making: 'Creating your certificate…',
@@ -167,10 +175,18 @@ function certBody(app, game) {
   }
   const c = app.ui.cert;
   const ready = c && c.game === game && c.url;
+  if (!app.nickSaved || (c?.game === game && c.needName)) {
+    // No saved name yet: ask for it here (it is also the name used at tables).
+    return `<form class="cert cert-ask" data-submit="certMake">
+      <p><b>${esc(x.askName)}</b></p>
+      <p class="small muted">${esc(x.askNameHelp)}</p>
+      <input id="certName" data-keep maxlength="20" autocomplete="nickname" placeholder="${esc(x.namePh)}" value="">
+      <button class="btn primary block" type="submit">${esc(x.makeFirst)}</button></form>`;
+  }
   return `<div class="cert">
     <form class="row cert-name" data-submit="certMake">
       <label for="certName" class="small">${esc(x.name)}</label>
-      <input id="certName" data-keep maxlength="40" value="${esc(c?.game === game ? c.name : app.nick)}">
+      <input id="certName" data-keep maxlength="20" autocomplete="nickname" value="${esc(app.nick)}">
       <button class="btn sm" type="submit">${esc(x.make)}</button>
     </form>
     ${ready ? `<img class="cert-img" src="${esc(c.url)}" alt="${esc(x.cert)}">` : `<div class="cert-img placeholder">${esc(x.making)}</div>`}

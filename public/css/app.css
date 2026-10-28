@@ -722,3 +722,6 @@ code { font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; }
   .btn.opt { min-height: 38px; font-size: 13px; }
   .big-score { font-size: 36px; }
 }
+.sheet.ask-name { display: grid; gap: 10px; width: min(420px, 100%); }
+.sheet.ask-name input, .cert-ask input { min-height: 46px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); padding: 0 12px; color: var(--ink); font-size: 16px; }
+.cert-ask { align-content: start; }

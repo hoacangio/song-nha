@@ -7,7 +7,7 @@ import { verifyCommitment } from './domain/shuffle.js';
 import { deviceSecret } from './services/identity.js';
 import { api } from './services/api.js';
 import { TableSocket } from './services/socket.js';
-import { homeView, rulesView, rulesFields } from './views/home.js';
+import { homeView, rulesView, rulesFields, askNameView } from './views/home.js';
 import { settingsView } from './ui/accent.js';
 import { learnView, learnLang } from './views/learn.js';
 import { COURSES, COURSE_IDS, PASS_SCORE, EXAM_SIZE, isComplete, normalizeProgress } from './learn/index.js';
@@ -46,6 +46,7 @@ const app = {
   installPrompt: null,
   secret: deviceSecret(),
 };
+app.nickSaved = !!savedName();
 setLang(app.lang);
 applyTheme();
 setSoundEnabled(app.sound);
@@ -69,6 +70,7 @@ function render() {
     (app.route.name === 'table' && app.table ? tableView(app) : homeView(app)) +
     (app.ui.rules && app.route.name !== 'table' ? rulesView(app) : '') +
     (app.ui.settings ? settingsView(app) : '') +
+    (app.ui.askName ? askNameView(app) : '') +
     (app.ui.learn ? learnView(app) : '');
   for (const o of root.querySelectorAll('.overlay[data-ov]')) if (shownOverlays.has(o.dataset.ov)) o.classList.add('steady');
   const cf = document.getElementById('createForm');
@@ -179,7 +181,12 @@ async function makeCertificate(name) {
   const game = app.ui.learn?.game;
   const prog = game && app.learnProg[game];
   if (!prog || !isComplete(game, prog, learnLang())) return;
-  const who = (name ?? (app.ui.cert?.game === game ? app.ui.cert.name : app.nick) ?? '').trim() || 'Sòng Nhà';
+  const who = cleanName(name ?? savedName());
+  if (!who) {
+    app.ui.cert = { game, needName: true };
+    if (app.ui.learn?.tab === 'cert') render();
+    return;
+  }
   const date = (prog.passedAt || new Date().toISOString()).slice(0, 10);
   const courseTitle = COURSES[game].title(learnLang());
   const id = await certificateId({ name: who, course: game, score: prog.best, total: EXAM_SIZE, date });
@@ -206,9 +213,31 @@ function go(path, replace = false) {
   transition(route);
 }
 
+/** The name the player saved on this device (used at tables and on certificates). */
+function savedName() {
+  return cleanName(load('sn.nick', ''));
+}
+function cleanName(v) {
+  return String(v ?? '').replace(/\s+/g, ' ').trim().slice(0, 20);
+}
+function setName(v) {
+  const n = cleanName(v);
+  if (!n) return false;
+  app.nick = n;
+  app.nickSaved = true;
+  save('sn.nick', n);
+  return true;
+}
+
 function route() {
   const r = parseRoute();
   if (r.name === 'table') {
+    // Ask for a name before sitting down (once per device); "guest" skips without saving.
+    if (!savedName() && !app.guestOk) {
+      app.ui.askName = { code: r.code };
+      app.route = { name: 'home' };
+      return render();
+    }
     if (!app.table || app.table.code !== r.code) openTable(r.code);
   } else {
     closeTable();
@@ -220,7 +249,7 @@ addEventListener('popstate', () => transition(route));
 
 function openTable(code) {
   closeTable();
-  if (!app.nick) app.nick = `Khách ${Math.floor(Math.random() * 900 + 100)}`;
+  if (!app.nick) app.nick = `Khách ${Math.floor(Math.random() * 900 + 100)}`; // guest name, not saved
   app.table = { code, state: null, status: 'connecting', history: null, prevTurn: false };
   app.ui = { tab: 'players' };
   rememberTable(code, {});
@@ -581,8 +610,29 @@ export const actions = {
     render();
   },
   certMake: () => {
-    const name = (document.getElementById('certName')?.value || '').trim().slice(0, 40);
-    makeCertificate(name || app.nick);
+    const el = document.getElementById('certName');
+    if (!setName(el?.value)) {
+      el?.focus();
+      return toast(t('askNameRequired'));
+    }
+    el?.removeAttribute('data-dirty');
+    makeCertificate(app.nick);
+  },
+  askNameSave: () => {
+    const el = document.getElementById('askName');
+    if (!setName(el?.value)) {
+      el?.focus();
+      return toast(t('askNameRequired'));
+    }
+    const code = app.ui.askName?.code;
+    app.ui.askName = null;
+    if (code) route();
+    else render();
+  },
+  askNameGuest: () => {
+    app.guestOk = true;
+    app.ui.askName = null;
+    route();
   },
   certDownload: () => {
     const c = app.ui.cert;
@@ -712,6 +762,7 @@ root.addEventListener('input', (e) => {
   if (el.matches?.('[data-keep]')) el.dataset.dirty = '1';
   if (el.dataset?.input === 'nick') {
     app.nick = el.value.slice(0, 20);
+    app.nickSaved = !!cleanName(app.nick);
     save('sn.nick', app.nick);
   }
   recordDraft(el);

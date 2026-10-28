@@ -103,3 +103,66 @@ test('a failed exam does not unlock the certificate', async ({ browser }) => {
   await expect(page.locator('.checklist')).toBeVisible();
   await ctx.close();
 });
+
+test('no saved name: the certificate asks for one, saves it, and it becomes the table name', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, locale: 'vi-VN', acceptDownloads: true });
+  const page = await ctx.newPage();
+  await page.goto('/');
+  // complete the Xì dách course without ever typing a name
+  await page.click('[data-act=learnOpen]');
+  await page.click('[data-act=learnGame][data-v=xidach]');
+  for (const id of await page.locator('.learn .tabs [data-act=learnTab]').evaluateAll((els) => els.map((e) => e.dataset.v).filter((v) => v !== 'exam' && v !== 'cert')))
+    await page.click(`.learn .tabs [data-act=learnTab][data-v=${id}]`);
+  await page.click('.learn .tabs [data-act=learnTab][data-v=exam]');
+  await page.click('[data-act=examStart]');
+  for (let i = 0; i < 10; i++) {
+    const a = await page.evaluate(() => window.App.app.ui.exam.qs[window.App.app.ui.exam.i].answer);
+    await page.click(`[data-act=examPick][data-v="${a}"]`);
+    await page.click('[data-act=examNext]');
+  }
+  await page.click('.exam-result [data-act=learnTab][data-v=cert]');
+  // asked for a name, no certificate yet, no default "Sòng Nhà"
+  await expect(page.locator('.cert-ask #certName')).toHaveValue('');
+  await expect(page.locator('img.cert-img')).toHaveCount(0);
+  await page.click('.cert-ask button[type=submit]'); // empty → refused
+  await expect(page.locator('img.cert-img')).toHaveCount(0);
+  await page.fill('#certName', 'Thái Hòa');
+  await page.click('.cert-ask button[type=submit]');
+  await expect(page.locator('img.cert-img')).toBeVisible();
+  await expect(page.locator('#certName')).toHaveValue('Thái Hòa');
+  // saved on the device and used on the home page and at the table
+  await page.reload();
+  await expect(page.locator('#nick')).toHaveValue('Thái Hòa');
+  await page.click('[data-act=createTable]');
+  await expect(page.locator('.seat.me')).toBeVisible();
+  const nick = await page.evaluate(() => window.App.app.table.state.seats[window.App.app.table.state.you.seat].nick);
+  expect(nick).toBe('Thái Hòa');
+  await ctx.close();
+});
+
+test('joining a table link without a saved name asks first; guest is allowed', async ({ browser }) => {
+  const host = await browser.newContext({ locale: 'vi-VN' });
+  const hp = await host.newPage();
+  await hp.goto('/');
+  await hp.fill('#nick', 'Chủ bàn');
+  await hp.click('[data-act=createTable]');
+  await expect(hp.locator('.seat.me')).toBeVisible();
+  const code = (await hp.locator('.code-chip').innerText()).trim();
+
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, locale: 'vi-VN' });
+  const page = await ctx.newPage();
+  await page.goto(`/t/${code}`);
+  await expect(page.locator('#askName')).toBeVisible();
+  await page.fill('#askName', 'Bình');
+  await page.click('.ask-name button[type=submit]');
+  await expect(page.locator('.seat.me')).toBeVisible();
+  expect(await page.evaluate(() => localStorage.getItem('sn.nick'))).toBe('"Bình"');
+
+  const g = await browser.newContext({ locale: 'vi-VN' });
+  const gp = await g.newPage();
+  await gp.goto(`/t/${code}`);
+  await gp.click('[data-act=askNameGuest]');
+  await expect(gp.locator('.seat.me')).toBeVisible();
+  expect(await gp.evaluate(() => localStorage.getItem('sn.nick'))).toBeNull();
+  await Promise.all([host.close(), ctx.close(), g.close()]);
+});

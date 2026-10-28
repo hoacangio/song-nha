@@ -132,3 +132,17 @@ export function rulesView(app) {
       </div>
     </div></div>`;
 }
+
+/** Asks for the player's name (shown at tables and printed on certificates). */
+export function askNameView(app) {
+  return `<div class="overlay" data-ov="name">
+    <form class="sheet ask-name" role="dialog" aria-modal="true" aria-label="${esc(t('askNameTitle'))}" data-submit="askNameSave" data-stop>
+      <h2>${esc(t('askNameTitle'))}</h2>
+      <p class="small muted">${esc(t('askNameHelp'))}</p>
+      <input id="askName" data-keep maxlength="20" autocomplete="nickname" placeholder="${esc(t('nickPh'))}" value="">
+      <div class="row">
+        <button class="btn" type="button" data-act="askNameGuest">${esc(t('askNameGuest'))}</button>
+        <button class="btn primary grow" type="submit">${esc(t('askNameSave'))}</button>
+      </div>
+    </form></div>`;
+}
