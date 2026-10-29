@@ -11,6 +11,7 @@ import {
   sortCards,
 } from '../../../public/js/domain/tienlen.js';
 import { isCardList } from '../../../public/js/domain/cards.js';
+import { personaOf } from '../personas.js';
 import { GameError, clampInt } from '../common.js';
 
 export const meta = Object.freeze({ id: 'tienlen', minSeats: 2, maxSeats: 4 });
@@ -296,6 +297,12 @@ export function botDue(t, h) {
 }
 
 export function botAct(t, h, seat, now) {
+  // A careful or tricky bot keeps its 2s (and chop combos) while it still holds many cards.
+  const keep = personaOf(t, seat).tlKeepTwos;
+  if (h.trick && keep && h.hands[seat].length > keep) {
+    const cards = suggestPlay(h.hands[seat], h.trick.combo, t.opts.game, h.mustInclude);
+    if (cards && cards.some((c) => c[0] === '2')) return pass(t, h, seat, now);
+  }
   return autoMove(t, h, seat, now);
 }
 

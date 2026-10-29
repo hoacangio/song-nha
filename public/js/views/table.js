@@ -77,7 +77,7 @@ function seatsHtml(app, gv) {
       const isTurn = h && h.phase !== 'done' && h.turn === i;
       const flags = [isMe ? 'me' : '', isTurn ? 'turn' : '', seat.online ? '' : 'off', h?.dealer === i ? 'is-dealer' : '', y < 25 ? 'at-top' : y > 75 ? 'at-bottom' : ''].join(' ');
       return `<div class="seat ${flags}" style="${style}" data-seat="${i}">
-        <div class="avatar ${seat.bot ? 'bot' : ''}">${initials(seat.nick)}${isTurn ? ringHtml(h.deadline, turnMs, app.skew) : ''}</div>
+        <div class="avatar ${seat.bot ? 'bot' : ''}" ${seat.bot ? `title="${esc(t(`persona_${seat.persona || 'deu'}`))}"` : ''}>${seat.bot ? PERSONA_ICON[seat.persona] || '🤖' : initials(seat.nick)}${isTurn ? ringHtml(h.deadline, turnMs, app.skew) : ''}</div>
         <div class="who"><b>${isMe ? esc(t('you')) : esc(seat.nick)}</b><span class="chips ${seat.chips < 0 ? 'down' : ''}">${fmt(seat.chips)}</span></div>
         ${!seat.online && !seat.bot ? `<span class="tag">${esc(t('offline'))}</span>` : ''}
         <div class="seat-x">${gv.seat(app, i, isMe)}</div>
@@ -85,6 +85,9 @@ function seatsHtml(app, gv) {
     })
     .join('');
 }
+
+/** Bot personalities (src/games/personas.js), shown on the avatar and in the players list. */
+const PERSONA_ICON = { can: '🛡️', deu: '🙂', lieu: '🔥', loc: '🦊' };
 
 const TABS = ['players', 'board', 'history', 'fairness', 'learn', 'settings'];
 
@@ -117,7 +120,7 @@ function playersTab(app) {
       if (!p) return '';
       const isMe = i === s.you.seat;
       const ctl = host && !isMe ? `<button class="btn xs ghost" data-act="${p.bot ? 'removeBot' : 'kick'}" data-seat="${i}">${esc(t(p.bot ? 'removeBot' : 'kick'))}</button>` : '';
-      return `<li><span class="dot ${p.online ? 'on' : ''}"></span><b>${esc(p.nick)}</b>${p.pid === s.hostPid ? ` <small>${esc(t('host'))}</small>` : ''}${p.bot ? ' <small>bot</small>' : ''}<span class="grow-sp"></span><span class="num">${fmt(p.chips)}</span>${ctl}</li>`;
+      return `<li><span class="dot ${p.online ? 'on' : ''}"></span><b>${esc(p.nick)}</b>${p.pid === s.hostPid ? ` <small>${esc(t('host'))}</small>` : ''}${p.bot ? ` <small>${PERSONA_ICON[p.persona] || '🤖'} ${esc(t(`persona_${p.persona || 'deu'}`))}</small>` : ''}<span class="grow-sp"></span><span class="num">${fmt(p.chips)}</span>${ctl}</li>`;
     })
     .join('');
   return `<ul class="list">${rows}</ul>

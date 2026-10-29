@@ -11,6 +11,7 @@ import {
   canStand,
 } from '../../../public/js/domain/xidach.js';
 import { isChipAmount, isSeatIndex } from '../../lib/protocol.js';
+import { personaOf } from '../personas.js';
 import { GameError, clampInt, pick } from '../common.js';
 
 export const meta = Object.freeze({ id: 'xidach', minSeats: 2, maxSeats: 8 });
@@ -270,11 +271,15 @@ export function botDue(t, h) {
 
 export function botAct(t, h, seat, now) {
   const o = t.opts.game;
-  if (h.phase === 'bet') return act(t, h, seat, { t: 'bet', amount: Math.min(o.minBet, t.seats[seat].chips) }, now);
+  const pz = personaOf(t, seat);
+  if (h.phase === 'bet') {
+    const want = Math.min(o.maxBet ?? Infinity, o.minBet * pz.xdBet);
+    return act(t, h, seat, { t: 'bet', amount: Math.max(1, Math.min(want, t.seats[seat].chips)) }, now);
+  }
   const c = h.cards[seat];
   const total = handTotal(c, o.aceRule);
   if (h.phase === 'play') {
-    return act(t, h, seat, { t: canHit(c, o.aceRule) && total < Math.max(17, o.playerMin) ? 'hit' : 'stay' }, now);
+    return act(t, h, seat, { t: canHit(c, o.aceRule) && total < Math.max(pz.xdStand, o.playerMin) ? 'hit' : 'stay' }, now);
   }
   if (h.phase === 'dealer') {
     if (canHit(c, o.aceRule) && total < Math.max(16, o.dealerMin)) return act(t, h, seat, { t: 'hit' }, now);

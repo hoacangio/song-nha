@@ -14,7 +14,8 @@ no cash-out, no prizes, no ads). Create a private table, share the link or QR co
 - Five games: Xì dách, Tiến lên miền Nam, Texas Hold'em, Mậu binh and Tichu.
 - Private tables with codes like `SEN-1234`, invite dialog with QR code (dependency-free encoder) and full screen.
 - Optional public tables: the host may let strangers join via “🎲 random table”.
-- Bots for empty seats (host adds/removes them) — handy for testing and for two-person games.
+- Bots for empty seats (host adds/removes them), each with a random personality: 🛡️ Cẩn thận (safe), 🙂 Điềm đạm
+  (balanced), 🔥 Liều lĩnh (hits, raises, bets and bombs more), 🦊 Lọc lõi (bluffs, keeps its 2s) — see src/games/personas.js.
 - Server-authoritative rules, dealing, timers and payouts; per-player views (no one ever receives
   another player's hidden cards); commit–reveal fairness proof for every hand.
 - Turn timer (host-configurable, default 30 s) with auto-stand/auto-play; reconnect with backoff and a

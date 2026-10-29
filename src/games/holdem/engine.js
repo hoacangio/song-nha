@@ -8,6 +8,7 @@ import {
   preflopStrength,
 } from '../../../public/js/domain/holdem.js';
 import { isChipAmount } from '../../lib/protocol.js';
+import { personaOf } from '../personas.js';
 import { GameError, clampInt } from '../common.js';
 
 export const meta = Object.freeze({ id: 'holdem', minSeats: 2, maxSeats: 9 });
@@ -305,18 +306,21 @@ export function botAct(t, h, seat, now) {
     const cat = bestHand([...h.hole[seat], ...h.board]).score / 15 ** 5;
     strength = Math.min(1, 0.25 + Math.floor(cat) * 0.17 + (cat % 1) * 0.1);
   }
+  const pz = personaOf(t, seat);
   strength += (Math.random() - 0.5) * 0.15;
+  // A bluffer sometimes plays a weak hand as if it were strong.
+  if (Math.random() < pz.hdBluff) strength = Math.max(strength, pz.hdRaise + 0.02);
   const odds = toCall > 0 ? toCall / (pot + toCall) : 0;
   const raiseTo = (mult) => {
     const target = Math.max(h.currentBet + h.minRaise, h.currentBet + Math.round((pot * mult) / o.bigBlind) * o.bigBlind);
     return Math.min(target, h.bet[seat] + stack);
   };
-  if (strength > 0.78 && h.canRaise[seat] && stack > toCall) {
+  if (strength > pz.hdRaise && h.canRaise[seat] && stack > toCall) {
     const to = raiseTo(strength > 0.9 ? 1 : 0.6);
     return act(t, h, seat, to >= h.bet[seat] + stack ? { t: 'allin' } : { t: 'raise', amount: to }, now);
   }
   if (toCall === 0) return act(t, h, seat, { t: 'check' }, now);
-  if (strength >= odds + 0.15 || toCall <= o.bigBlind) return act(t, h, seat, { t: 'call' }, now);
+  if (strength >= odds + pz.hdCall || toCall <= o.bigBlind) return act(t, h, seat, { t: 'call' }, now);
   return act(t, h, seat, { t: 'fold' }, now);
 }
 

@@ -1138,3 +1138,4 @@ code { font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; }
 @media (orientation: landscape) and (max-height: 520px) and (max-width: 1023px) {
   .settings-body .elements { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 16px; }
 }
+.avatar.bot { font-size: 18px; }

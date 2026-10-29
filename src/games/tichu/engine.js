@@ -29,6 +29,7 @@ import {
   botDragonTarget,
   RANKS,
 } from '../../../public/js/domain/tichu.js';
+import { personaOf, PERSONAS } from '../personas.js';
 import { GameError, clampInt } from '../common.js';
 
 export const meta = Object.freeze({ id: 'tichu', minSeats: 4, maxSeats: 4, deck: TICHU_DECK });
@@ -380,7 +381,7 @@ export function act(t, h, seat, msg, now) {
 
 const counts = (h) => h.hands.map((x) => x.length);
 
-function ctxFor(h, seat) {
+function ctxFor(t, h, seat) {
   const partner = partnerOf(h, seat);
   const opp = opponentsOf(h, seat).filter((p) => hasCards(h, p));
   return {
@@ -391,11 +392,12 @@ function ctxFor(h, seat) {
     partnerCount: h.hands[partner].length,
     oppMinCount: opp.length ? Math.min(...opp.map((p) => h.hands[p].length)) : 99,
     myCount: h.hands[seat].length,
+    bombAt: (t.seats[seat]?.bot ? PERSONAS[t.seats[seat].persona] ?? PERSONAS.deu : PERSONAS.deu).tcBomb,
   };
 }
 
 function autoPlay(t, h, seat, now) {
-  const choice = botPlay(h.hands[seat], ctxFor(h, seat));
+  const choice = botPlay(h.hands[seat], ctxFor(t, h, seat));
   if (choice) return play(t, h, seat, choice.cards, choice.wish ?? null, now);
   return pass(t, h, seat, now);
 }
@@ -427,9 +429,10 @@ export function botDue(t, h) {
 }
 
 export function botAct(t, h, seat, now) {
-  if (h.phase === 'grand') return decideGrand(t, h, seat, botGrand(h.hands[seat]), now);
+  const pz = personaOf(t, seat);
+  if (h.phase === 'grand') return decideGrand(t, h, seat, botGrand(h.hands[seat], pz.tcGrand), now);
   if (h.phase === 'exchange') {
-    if (!h.calls[seat] && !h.calls[partnerOf(h, seat)] && botTichu(h.hands[seat])) h.calls[seat] = 'tichu';
+    if (!h.calls[seat] && !h.calls[partnerOf(h, seat)] && botTichu(h.hands[seat], pz.tcTichu)) h.calls[seat] = 'tichu';
     return giveCards(t, h, seat, botExchange(h.hands[seat]), now);
   }
   if (h.phase === 'dragon') return giveDragon(t, h, seat, botDragonTarget(opponentsOf(h, seat), counts(h)), now);

@@ -3,6 +3,7 @@
 import { DECK } from '../../public/js/domain/cards.js';
 import { shuffle, randomHex, sha256Hex, commitment } from '../../public/js/domain/shuffle.js';
 import { GAMES } from '../games/index.js';
+import { randomPersona } from '../games/personas.js';
 import { GameError, clampInt } from '../games/common.js';
 import { isChipAmount, isSeatIndex, cleanNick } from '../lib/protocol.js';
 
@@ -184,6 +185,7 @@ export async function handle(t, actor, msg, now) {
         nick: `Bot ${t.botSeq}`,
         chips: t.opts.startChips,
         bot: true,
+        persona: randomPersona(),
         away: null,
         leaving: false,
       };
@@ -340,6 +342,7 @@ export function snapshot(t, { pid, isHost, connected }, now) {
             nick: s.nick,
             chips: s.chips,
             bot: !!s.bot,
+            persona: s.bot ? s.persona ?? 'deu' : undefined,
             away: !!s.away,
             leaving: !!s.leaving,
             online: s.bot || connected.has(s.pid),

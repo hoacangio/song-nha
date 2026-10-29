@@ -271,9 +271,9 @@ const strengthOf = (hand) => {
 };
 
 /** Grand Tichu (on 8 cards): only with an exceptional start. */
-export const botGrand = (eight) => strengthOf(eight) >= 5.5;
+export const botGrand = (eight, at = 5.5) => strengthOf(eight) >= at;
 /** Tichu (on 14 cards before playing). */
-export const botTichu = (hand) => strengthOf(hand) >= 7;
+export const botTichu = (hand, at = 7) => strengthOf(hand) >= at;
 
 /** Three cards to give: [to next player, to partner, to previous player]. */
 export function botExchange(hand) {
@@ -323,7 +323,7 @@ export function botPlay(hand, ctx) {
   const urgent = ctx.oppMinCount <= 2 || ctx.myCount <= 4;
   const cheap = normalBeats.filter((p) => urgent || (!p.cards.includes(DR) && !p.cards.includes(PH)));
   if (cheap.length) return withWish(cheap.sort((a, b) => cost(a) - cost(b))[0].cards, hand);
-  if (ctx.oppMinCount <= 2) {
+  if (ctx.oppMinCount <= (ctx.bombAt ?? 2)) {
     const bombs = plays.filter((p) => isBomb(p.combo)).sort((a, b) => cost(a) - cost(b));
     if (bombs.length) return { cards: bombs[0].cards };
   }
