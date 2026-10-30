@@ -1139,3 +1139,14 @@ code { font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; }
   .settings-body .elements { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 16px; }
 }
 .avatar.bot { font-size: 18px; }
+
+/* Fanned small cards (seat hands, Mậu binh results, history): the rank sits in the top-left corner and the
+   overlap is a fraction of the card width, so every card's rank stays readable at any size or orientation. */
+.mini-hand .card + .card { margin-left: calc(var(--cw) * -0.42); }
+.mb-mini-row .card + .card { margin-left: calc(var(--cw) * -0.38); }
+.mini-hand .card .ci, .mb-mini-row .card .ci {
+  position: absolute; top: 2%; left: 5%; display: grid; justify-items: center; line-height: 0.95;
+  font-size: calc(var(--cw) * 0.36);
+}
+.mini-hand .card .ci i, .mb-mini-row .card .ci i { font-size: 0.9em; }
+.mb-mini-row .card { --cw: 17px; }
