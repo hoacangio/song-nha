@@ -3,7 +3,7 @@
 import { DECK } from '../../public/js/domain/cards.js';
 import { shuffle, randomHex, sha256Hex, commitment } from '../../public/js/domain/shuffle.js';
 import { GAMES } from '../games/index.js';
-import { randomPersona } from '../games/personas.js';
+import { randomPersona, PERSONA_NAMES } from '../games/personas.js';
 import { GameError, clampInt } from '../games/common.js';
 import { isChipAmount, isSeatIndex, cleanNick } from '../lib/protocol.js';
 
@@ -180,12 +180,13 @@ export async function handle(t, actor, msg, now) {
       const i = freeSeat(t);
       if (i < 0) err('table_full');
       t.botSeq += 1;
+      const persona = randomPersona();
       t.seats[i] = {
         pid: `bot-${t.botSeq}`,
-        nick: `Bot ${t.botSeq}`,
+        nick: `${PERSONA_NAMES[persona]} ${t.botSeq}`, // e.g. "Liều lĩnh 3": the name tells how it plays
         chips: t.opts.startChips,
         bot: true,
-        persona: randomPersona(),
+        persona,
         away: null,
         leaving: false,
       };

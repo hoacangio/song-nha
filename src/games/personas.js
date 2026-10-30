@@ -9,6 +9,8 @@ export const PERSONAS = Object.freeze({
   lieu: { xdStand: 18, xdBet: 3, hdRaise: 0.66, hdCall: 0.05, hdBluff: 0.1, tlKeepTwos: 0, tcTichu: 5.5, tcGrand: 4.5, tcBomb: 5 },
   loc: { xdStand: 16, xdBet: 2, hdRaise: 0.82, hdCall: 0.12, hdBluff: 0.18, tlKeepTwos: 8, tcTichu: 6.5, tcGrand: 5, tcBomb: 3 },
 });
+/** Bot names (Vietnamese, the app's default language): the personality plus a number. */
+export const PERSONA_NAMES = Object.freeze({ can: 'Cẩn thận', deu: 'Điềm đạm', lieu: 'Liều lĩnh', loc: 'Lọc lõi' });
 export const PERSONA_IDS = Object.keys(PERSONAS);
 
 export const randomPersona = (rand = Math.random) => PERSONA_IDS[Math.floor(rand() * PERSONA_IDS.length)];

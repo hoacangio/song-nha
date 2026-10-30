@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createTable, handle, tick, snapshot } from '../../src/table/core.js';
-import { PERSONA_IDS } from '../../src/games/personas.js';
+import { PERSONA_IDS, PERSONA_NAMES } from '../../src/games/personas.js';
 
 const H = { pid: 'host', isHost: true, nick: 'Host' };
 
@@ -14,6 +14,7 @@ test('every added bot gets one of the personalities, shown to players', async ()
     await handle(t, H, { t: 'addBot' }, 0);
     const bot = t.seats.find((s) => s?.bot);
     assert.ok(PERSONA_IDS.includes(bot.persona));
+    assert.match(bot.nick, new RegExp(`^${PERSONA_NAMES[bot.persona]} \\d+$`), 'named after its personality');
     seen.add(bot.persona);
     const v = snapshot(t, { pid: H.pid, isHost: true, connected: new Set([H.pid]) }, 0);
     assert.equal(v.seats.find((s) => s?.bot).persona, bot.persona);
